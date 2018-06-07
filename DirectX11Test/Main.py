@@ -10,8 +10,7 @@ class Main(QMainWindow):
         super(Main, self).__init__(parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-        
-    
+            
     def Func(self):
         pass
 
