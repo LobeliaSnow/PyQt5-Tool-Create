@@ -15,8 +15,22 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
+    <item row="1" column="5">
+     <widget class="QLineEdit" name="lineEdit_2">
+      <property name="readOnly">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
     <item row="1" column="1">
      <widget class="QLineEdit" name="python_editor"/>
+    </item>
+    <item row="1" column="4">
+     <widget class="QLabel" name="output_label">
+      <property name="text">
+       <string>output</string>
+      </property>
+     </widget>
     </item>
     <item row="1" column="3">
      <widget class="QPushButton" name="execute_button">
@@ -25,9 +39,6 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="0" colspan="6">
-     <widget class="QOpenGLWidget" name="openGLWidget"/>
-    </item>
     <item row="1" column="0">
      <widget class="PythonEditorTrigger" name="python_button">
       <property name="text">
@@ -35,19 +46,8 @@
       </property>
      </widget>
     </item>
-    <item row="1" column="5">
-     <widget class="QLineEdit" name="lineEdit_2">
-      <property name="readOnly">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
-    <item row="1" column="4">
-     <widget class="QLabel" name="output_label">
-      <property name="text">
-       <string>output</string>
-      </property>
-     </widget>
+    <item row="0" column="0" colspan="6">
+     <widget class="DirectXWidget" name="directX11Widget"/>
     </item>
    </layout>
   </widget>
@@ -60,14 +60,31 @@
      <height>21</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuScript">
+    <property name="title">
+     <string>&amp;Script</string>
+    </property>
+    <addaction name="actionScriptManager"/>
+   </widget>
+   <addaction name="menuScript"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionScriptManager">
+   <property name="text">
+    <string>&amp;ScriptManagerを起動</string>
+   </property>
+  </action>
  </widget>
  <customwidgets>
   <customwidget>
    <class>PythonEditorTrigger</class>
    <extends>QLabel</extends>
    <header>pythoneditortrigger.h</header>
+  </customwidget>
+  <customwidget>
+   <class>DirectXWidget</class>
+   <extends>QOpenGLWidget</extends>
+   <header>directxwidget.h</header>
   </customwidget>
  </customwidgets>
  <resources/>

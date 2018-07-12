@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_python_code_editor(object):
     def setupUi(self, python_code_editor):
         python_code_editor.setObjectName("python_code_editor")
-        python_code_editor.resize(999, 719)
+        python_code_editor.resize(493, 366)
         self.gridLayout = QtWidgets.QGridLayout(python_code_editor)
         self.gridLayout.setObjectName("gridLayout")
         self.title1 = QtWidgets.QLabel(python_code_editor)
