@@ -40,4 +40,4 @@ class PythonEditorTrigger(QLabel):
         text = ExecutePythonCode(self.window.ui.text_edit.toPlainText())
         # exec(self.window.ui.text_edit.toPlainText())
         # text = self.window.console.GetConsoleText()
-        self.window.ui.text_browser.setText(text)
+        # self.window.ui.text_browser.setText(text)

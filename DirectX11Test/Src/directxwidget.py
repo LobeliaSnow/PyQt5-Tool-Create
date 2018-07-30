@@ -7,7 +7,7 @@ import random
 
 class RenderObject(object):
     def Render(self):
-        pass        
+        pass
 
 class DirectXWidget(QOpenGLWidget):
     renderList = []
@@ -31,7 +31,7 @@ class DirectXWidget(QOpenGLWidget):
         self.renderer.End()
         self.renderCount = 8
         self.renderTopology = DirectX11.PrimitiveTopology.LINE_STRIP
-        
+        self.timerId = self.startTimer(500)
         
     def GetRendere(self):
         return self.renderer
@@ -47,4 +47,7 @@ class DirectXWidget(QOpenGLWidget):
         for render in DirectXWidget.renderList:
             render.Render()
         self.swapChain.Present(1)
-        pass
+    #タイマーイベントで定期的に描画内容更新
+    #http://melpystudio.blog82.fc2.com/blog-entry-153.html?sp
+    def timerEvent(self, event):
+        self.paintGL()

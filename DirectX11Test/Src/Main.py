@@ -9,6 +9,7 @@ from StdOutputHooker import *
 import DirectX11
 from ScriptManager import *
 from ScriptModule import *
+import random
 
 # todo : クラス間連携の取り方を模索すること
 # todo : PyQtのウインドウのメニューを動的に増減するやり方検索
@@ -45,15 +46,19 @@ class MainWindow(QMainWindow):
         #必須!デフォルトのQtのGLを切る
         self.ui.directX11Widget.setAttribute(Qt.WA_PaintOnScreen)
         self.ui.directX11Widget.setAttribute(Qt.WA_NativeWindow)
-        #ScriptManagerウインドウのインスタンス生成
-        self.ScriptManagerWindow = ScriptManager(self)
-        self.ScriptManagerWindow.GetScriptList()
-        #非表示にする
-        self.ScriptManagerWindow.hide()
         #この先各イベント設定
         self.ui.execute_button.clicked.connect(self.ScriptExecute)
         self.ui.actionScriptManager.triggered.connect(self.OpenScriptManager)
         self.menuEnum = {"Script":1}
+        object2d = DX2DObject("test.jpg")
+        object2d.pos = [-0.5,0.5]
+        object2d.scale = [1.0,-1.0]
+        directxwidget.DirectXWidget.renderList += [object2d]
+        #ScriptManagerウインドウのインスタンス生成
+        self.ScriptManagerWindow = ScriptManager(self)
+        self.ScriptManagerWindow.Initialize(self)
+
+        # SpriteRenderer.Initialize()
         
     def __del__(self):
         DirectX11.Device.Destroy()
@@ -65,7 +70,7 @@ class MainWindow(QMainWindow):
         menu = QtWidgets.QMenu(self.ui.menubar)
         menu.setObjectName(menu_name)
         _translate = QtCore.QCoreApplication.translate
-        menu.setTitle(_translate("MainWindow", "&yahoo"))
+        menu.setTitle(_translate("MainWindow", menu_name))
         return menu
 
     def GetMenuEnum(self):
@@ -74,7 +79,7 @@ class MainWindow(QMainWindow):
     #コマンド ScriptManagerを起動に接続されている
     def OpenScriptManager(self):
         self.ScriptManagerWindow.Show(self)
-
+    
     def ScriptExecute(self):
         self.ui.lineEdit_2.setText(ExecutePythonCode(self.ui.python_editor.text()))
         self.ui.python_editor.setText("")

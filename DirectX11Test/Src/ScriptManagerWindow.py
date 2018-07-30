@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\Users\2160149\Desktop\PyQt5\DirectX11Test\ScriptManagerWindow.ui'
+# Form implementation generated from reading ui file 'C:\Users\2160149\Desktop\PyQt5\DirectX11Test\Src\ScriptManagerWindow.ui'
 #
 # Created by: PyQt5 UI code generator 5.10.1
 #
@@ -31,8 +31,8 @@ class Ui_ScriptManagerForm(object):
     def retranslateUi(self, ScriptManagerForm):
         _translate = QtCore.QCoreApplication.translate
         ScriptManagerForm.setWindowTitle(_translate("ScriptManagerForm", "ScriptManager"))
-        self.pushButton.setText(_translate("ScriptManagerForm", "Add Script"))
-        self.pushButton_2.setText(_translate("ScriptManagerForm", "Load Select Script"))
+        self.pushButton.setText(_translate("ScriptManagerForm", "スクリプトの追加"))
+        self.pushButton_2.setText(_translate("ScriptManagerForm", "更新"))
         self.treeWidget.headerItem().setText(0, _translate("ScriptManagerForm", "スクリプト名"))
         self.treeWidget.headerItem().setText(1, _translate("ScriptManagerForm", "ロード"))
         self.treeWidget.headerItem().setText(2, _translate("ScriptManagerForm", "自動ロード"))
