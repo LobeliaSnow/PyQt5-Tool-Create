@@ -148,7 +148,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;DIRECTX11PROJECT_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Python36\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\black\AppData\Local\Programs\Python\Python36\include;C:\Python36\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
@@ -157,7 +157,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Users\2160149\Desktop\PyQt5\DirectX11Test\DirectX11Project\DirectXTex\x64;C:\Python36\libs</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\black\AppData\Local\Programs\Python\Python36\libs;DirectXTex\x64;C:\Python36\libs</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

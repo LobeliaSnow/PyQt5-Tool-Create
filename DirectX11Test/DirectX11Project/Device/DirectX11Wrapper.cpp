@@ -530,13 +530,6 @@ namespace Lobelia {
 		resuorcePointer = resource.pData;
 		if (!resuorcePointer)	Error::Message(ErrorCode::DXE90000);
 	}
-	void BufferBase::Set(int byte_pos, std::vector<float> data) {
-		float* temp = static_cast<float*>(resuorcePointer);
-		int index = byte_pos / 4;
-		for each(auto&& d in data) {
-			temp[index++] = d;
-		}
-	}
 	void BufferBase::End() {
 		if (!resuorcePointer) {
 			Error::Message(ErrorCode::DXE90000);
@@ -573,12 +566,15 @@ namespace Lobelia {
 	void VertexBuffer::Activate() {
 		UINT strides = STRUCT_SIZE;
 		UINT offset = 0;
-		char buffer[128] = {};
-		sprintf_s(buffer, "stride %d\n", strides);
-		OutputDebugString(buffer);
 		Device::GetContext()->IASetVertexBuffers(0, 1, Get().GetAddressOf(), &strides, &offset);
 	}
 	int VertexBuffer::GetMaxCount() { return VERTEX_COUNT; }
+	IndexBuffer::IndexBuffer(int vertex_count) {
+		BufferBase::Create(Get().GetAddressOf(), nullptr, static_cast<UINT>(sizeof(UINT)*vertex_count), D3D11_USAGE_DYNAMIC, D3D11_BIND_INDEX_BUFFER, D3D11_CPU_ACCESS_WRITE, 0);
+	}
+	void IndexBuffer::Activate(int start_vertex_location) {
+		Device::GetContext()->IASetIndexBuffer(Get().Get(), DXGI_FORMAT_R32_UINT, start_vertex_location * 4);
+	}
 	ConstantBuffer::ConstantBuffer(UINT slot, UINT stuct_size, byte activate_shader_elements) :slot(slot) {
 		SetFunctor(activate_shader_elements);
 		CreateConstantBuffer(stuct_size);
@@ -588,15 +584,15 @@ namespace Lobelia {
 		BufferBase::Create(Get().GetAddressOf(), nullptr, stuct_size, D3D11_USAGE_DEFAULT, D3D11_BIND_CONSTANT_BUFFER, 0, 0);
 	}
 	void ConstantBuffer::SetFunctor(byte activate_shader_elements) {
-		if (activate_shader_elements & static_cast<int>(ShaderStageList::VS))	functor.push_back([this]() {Device::GetContext()->VSSetConstantBuffers(slot, 1, buffer.GetAddressOf()); });
-		if (activate_shader_elements & static_cast<int>(ShaderStageList::PS))	functor.push_back([this]() {Device::GetContext()->PSSetConstantBuffers(slot, 1, buffer.GetAddressOf()); });
-		if (activate_shader_elements & static_cast<int>(ShaderStageList::HS))	functor.push_back([this]() {Device::GetContext()->HSSetConstantBuffers(slot, 1, buffer.GetAddressOf()); });
-		if (activate_shader_elements & static_cast<int>(ShaderStageList::GS))	functor.push_back([this]() {Device::GetContext()->GSSetConstantBuffers(slot, 1, buffer.GetAddressOf()); });
-		if (activate_shader_elements & static_cast<int>(ShaderStageList::DS))	functor.push_back([this]() {Device::GetContext()->DSSetConstantBuffers(slot, 1, buffer.GetAddressOf()); });
-		if (activate_shader_elements & static_cast<int>(ShaderStageList::CS))	functor.push_back([this]() {Device::GetContext()->CSSetConstantBuffers(slot, 1, buffer.GetAddressOf()); });
+		if (activate_shader_elements & static_cast<int>(ShaderStageList::VS))	functor.push_back([this]() {Device::GetContext()->VSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
+		if (activate_shader_elements & static_cast<int>(ShaderStageList::PS))	functor.push_back([this]() {Device::GetContext()->PSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
+		if (activate_shader_elements & static_cast<int>(ShaderStageList::HS))	functor.push_back([this]() {Device::GetContext()->HSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
+		if (activate_shader_elements & static_cast<int>(ShaderStageList::GS))	functor.push_back([this]() {Device::GetContext()->GSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
+		if (activate_shader_elements & static_cast<int>(ShaderStageList::DS))	functor.push_back([this]() {Device::GetContext()->DSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
+		if (activate_shader_elements & static_cast<int>(ShaderStageList::CS))	functor.push_back([this]() {Device::GetContext()->CSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
 	}
 	void ConstantBuffer::Activate(void* cb_struct) {
-		Device::GetContext()->UpdateSubresource(buffer.Get(), 0, nullptr, cb_struct, 0, 0);
+		Device::GetContext()->UpdateSubresource(Get().Get(), 0, nullptr, cb_struct, 0, 0);
 		for each(auto&& Set in functor) {
 			Set();
 		}
@@ -785,8 +781,11 @@ namespace Lobelia {
 	void InputLayout::Set() { Device::GetContext()->IASetInputLayout(inputLayout.Get()); }
 	//この先シェーダーコードの定義
 	//とりあえず何も考えず適当に
-	//2D
 	std::string constantBufferInfo = {
+		"cbuffer Camera : register(b0) {\n"
+		"	float4x4 view;\n"
+		"	float4x4 projection;\n"
+		"};\n"
 		"cbuffer Model : register(b1) {\n"
 		"	float4x4 world;\n"
 		"};\n"
@@ -831,11 +830,12 @@ namespace Lobelia {
 	std::string simpleShader3DVS = {
 		"SIMPLE_PS_IN SimpleVS(SIMPLE_VS_IN input){ \n"
 		"	SIMPLE_PS_IN output = (SIMPLE_PS_IN)0;\n"
-		"	float4 pos = input.pos;"
-		"	//World Converte"
-		"	output.pos.xy = pos;\n"
-		"	output.pos.z = 0.0f;\n"
-		"	output.pos.w = 1.0f;\n"
+		"	float4 pos = (float4)0;\n"
+		"	pos.xyz = input.pos;\n"
+		"	pos.w = 1.0f;\n"
+		"	//World Converte\n"
+		"	output.pos = mul(pos, view);\n"
+		"	output.pos = mul(output.pos, projection);\n"
 		"	return output;\n"
 		"}\n"
 	};
@@ -919,14 +919,14 @@ namespace Lobelia {
 		shader3DCode += header3DInfo;
 		shader3DCode += simpleShader3DVS;
 		shader3DCode += simpleShader3DPS;
-		std::string normal, skinning, instancing, skinningInstancing;
+		//std::string normal, skinning, instancing, skinningInstancing;
 		//とりあえず放置
 		//ShaderConverter::Converte3D(shader3DCode, normal, skinning, instancing, skinningInstancing);
 		//この先シェーダー とりあえず適当
-		ChangeVS2DMemory(shader2DCode.c_str(), shader2DCode.size(), "SimpleVS", ShaderModel::_4_0, false);
-		ChangePS2DMemory(shader2DCode.c_str(), shader2DCode.size(), "SimplePS", ShaderModel::_4_0, false);
-		ChangeVS3DMemory(shader3DCode.c_str(), shader3DCode.size(), "SimpleVS", ShaderModel::_4_0, false);
-		ChangePS3DMemory(shader3DCode.c_str(), shader3DCode.size(), "SimplePS", ShaderModel::_4_0, false);
+		ChangeVS2DMemory(shader2DCode, shader2DCode.size(), "SimpleVS", ShaderModel::_4_0, false);
+		ChangePS2DMemory(shader2DCode, shader2DCode.size(), "SimplePS", ShaderModel::_4_0, false);
+		ChangeVS3DMemory(shader3DCode, shader3DCode.size(), "SimpleVS", ShaderModel::_4_0, false);
+		ChangePS3DMemory(shader3DCode, shader3DCode.size(), "SimplePS", ShaderModel::_4_0, false);
 	}
 	void Material::ActivateState() {
 		blend->Set();
@@ -935,7 +935,7 @@ namespace Lobelia {
 		depthStencil->Set();
 		if (diffuseTexture)diffuseTexture->Set(0, ShaderStageList::PS);
 	}
-	void Material::ActivateShader2D(){
+	void Material::ActivateShader2D() {
 		vs2D->Set();
 		inputLayout2D->Set();
 		ps2D->Set();
@@ -948,41 +948,41 @@ namespace Lobelia {
 	void Material::ChangeDiffuseTexture(const char* file_name) {
 		diffuseTexture = TextureManager::Load(file_name);
 	}
-	void Material::CreateInputLayout(std::shared_ptr<VertexShader> vs, std::shared_ptr<InputLayout> inputLayout) {
+	void Material::CreateInputLayout(std::shared_ptr<VertexShader>& vs, std::shared_ptr<InputLayout>& inputLayout) {
 		//入力レイアウト
 		std::unique_ptr<Reflection> reflector = std::make_unique<Reflection>(vs.get());
-		inputLayout = std::make_unique<InputLayout>(vs.get(), reflector.get());
+		inputLayout = std::make_shared<InputLayout>(vs.get(), reflector.get());
 	}
 	std::shared_ptr<Texture> Material::GetDiffuseTexture() { return diffuseTexture; }
 
-	void Material::ChangeVS2DMemory(const char* data, int data_len, const char* entry, ShaderModel model, bool use_linkage) {
-		vs2D = std::make_shared<VertexShader>(data, data_len, entry, model, use_linkage);
+	void Material::ChangeVS2DMemory(std::string data, int data_len, std::string entry, ShaderModel model, bool use_linkage) {
+		vs2D = std::make_shared<VertexShader>(data.c_str(), data_len, entry.c_str(), model, use_linkage);
 		CreateInputLayout(vs2D, inputLayout2D);
 	}
-	void Material::ChangeVS2DFile(const char* file_path, const char* entry, ShaderModel model, bool use_linkage) {
-		vs2D = std::make_shared<VertexShader>(file_path, entry, model, use_linkage);
+	void Material::ChangeVS2DFile(std::string file_path, std::string entry, ShaderModel model, bool use_linkage) {
+		vs2D = std::make_shared<VertexShader>(file_path.c_str(), entry.c_str(), model, use_linkage);
 		CreateInputLayout(vs2D, inputLayout2D);
 	}
-	void Material::ChangePS2DMemory(const char* data, int data_len, const char* entry, ShaderModel model, bool use_linkage) {
-		ps2D = std::make_shared<PixelShader>(data, data_len, entry, model, use_linkage);
+	void Material::ChangePS2DMemory(std::string data, int data_len, std::string entry, ShaderModel model, bool use_linkage) {
+		ps2D = std::make_shared<PixelShader>(data.c_str(), data_len, entry.c_str(), model, use_linkage);
 	}
-	void Material::ChangePS2DFile(const char* file_path, const char* entry, ShaderModel model, bool use_linkage) {
-		ps2D = std::make_shared<PixelShader>(file_path, entry, model, use_linkage);
+	void Material::ChangePS2DFile(std::string file_path, std::string entry, ShaderModel model, bool use_linkage) {
+		ps2D = std::make_shared<PixelShader>(file_path.c_str(), entry.c_str(), model, use_linkage);
 	}
 
-	void Material::ChangeVS3DMemory(const char* data, int data_len, const char* entry, ShaderModel model, bool use_linkage) {
-		vs3D = std::make_shared<VertexShader>(data, data_len, entry, model, use_linkage);
+	void Material::ChangeVS3DMemory(std::string data, int data_len, std::string entry, ShaderModel model, bool use_linkage) {
+		vs3D = std::make_shared<VertexShader>(data.c_str(), data_len, entry.c_str(), model, use_linkage);
 		CreateInputLayout(vs3D, inputLayout3D);
 	}
-	void Material::ChangeVS3DFile(const char* file_path, const char* entry, ShaderModel model, bool use_linkage) {
-		vs3D = std::make_shared<VertexShader>(file_path, entry, model, use_linkage);
+	void Material::ChangeVS3DFile(std::string file_path, std::string entry, ShaderModel model, bool use_linkage) {
+		vs3D = std::make_shared<VertexShader>(file_path.c_str(), entry.c_str(), model, use_linkage);
 		CreateInputLayout(vs3D, inputLayout3D);
 	}
-	void Material::ChangePS3DMemory(const char* data, int data_len, const char* entry, ShaderModel model, bool use_linkage) {
-		ps3D = std::make_shared<PixelShader>(data, data_len, entry, model, use_linkage);
+	void Material::ChangePS3DMemory(std::string data, int data_len, std::string entry, ShaderModel model, bool use_linkage) {
+		ps3D = std::make_shared<PixelShader>(data.c_str(), data_len, entry.c_str(), model, use_linkage);
 	}
-	void Material::ChangePS3DFile(const char* file_path, const char* entry, ShaderModel model, bool use_linkage) {
-		ps3D = std::make_shared<PixelShader>(file_path, entry, model, use_linkage);
+	void Material::ChangePS3DFile(std::string file_path, std::string entry, ShaderModel model, bool use_linkage) {
+		ps3D = std::make_shared<PixelShader>(file_path.c_str(), entry.c_str(), model, use_linkage);
 	}
 	//----------------------------------------End Material------------------------------------------
 
@@ -1002,6 +1002,31 @@ namespace Lobelia {
 	void Viewport::Activate() {
 		Device::GetContext()->RSSetViewports(1, &viewport);
 	}
+	Camera::Camera(int size_x, int  size_y, float fov_rad, float near_z, float far_z) :fov(fov_rad), nearZ(near_z), farZ(far_z) {
+		constantBuffer = std::make_unique<ConstantBuffer>(0, sizeof(CBData), static_cast<int>(ShaderStageList::VS) | static_cast<int>(ShaderStageList::DS) | static_cast<int>(ShaderStageList::GS));
+		aspect = static_cast<float>(size_x) / static_cast<float>(size_y);
+	}
+	void Camera::SetPos(float x, float y, float z) { pos.x = x; pos.y = y; pos.z = z; }
+	void Camera::SetAt(float x, float y, float z) { at.x = x; at.y = y; at.z = z; }
+	void Camera::SetUp(float x, float y, float z) { up.x = x; up.y = y; up.z = z; }
+	void Camera::Activate() {
+		CBData data = {};
+		data.projection = CreateProjection(fov, aspect, nearZ, farZ);
+		data.view = CreateView(pos, at, up);
+		constantBuffer->Activate(&data);
+	}
+	DirectX::XMMATRIX Camera::CreateProjection(float fov_rad, float aspect, float near_z, float far_z) {
+		DirectX::XMMATRIX projection = DirectX::XMMatrixPerspectiveFovLH(fov_rad, aspect, near_z, far_z);
+		return DirectX::XMMatrixTranspose(projection);
+	}
+	DirectX::XMMATRIX Camera::CreateView(const DirectX::XMFLOAT4& pos, const DirectX::XMFLOAT4& at, const DirectX::XMFLOAT4&up) {
+		DirectX::XMVECTOR eyePos = DirectX::XMLoadFloat4(&pos);
+		DirectX::XMVECTOR eyeAt = DirectX::XMLoadFloat4(&at);
+		DirectX::XMVECTOR eyeUp = DirectX::XMLoadFloat4(&up);
+		DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(eyePos, eyeAt, eyeUp);
+		return DirectX::XMMatrixTranspose(view);
+	}
+
 	//----------------------------------------End Viewport------------------------------------------
 
 	//--------------------------------------------------------------------------------------------------
@@ -1104,28 +1129,31 @@ namespace Lobelia {
 	//		Begin Renderer
 	//
 	//--------------------------------------------------------------------------------------------------
-	Polygon2DRenderer::Polygon2DRenderer(int struct_size, int vertex_count_max) :VertexBuffer(struct_size, vertex_count_max), STRUCT_SIZE(struct_size), VERTEX_COUNT_MAX(vertex_count_max) {
+	PolygonRenderer::PolygonRenderer(int struct_size, int vertex_count_max) :VertexBuffer(struct_size, vertex_count_max), STRUCT_SIZE(struct_size), VERTEX_COUNT_MAX(vertex_count_max) {
 	}
-	void Polygon2DRenderer::Render(int render_count, PrimitiveTopology topology) {
+	void PolygonRenderer::Render(int render_count, PrimitiveTopology topology) {
 		Activate();
 		Device::GetContext()->IASetPrimitiveTopology(static_cast<D3D11_PRIMITIVE_TOPOLOGY>(topology));
 		Device::GetContext()->Draw(render_count, 0);
 	}
-
-	Polygon3DRenderer::Polygon3DRenderer(int struct_size, int vertex_count_max) :VertexBuffer(struct_size, vertex_count_max), STRUCT_SIZE(struct_size), VERTEX_COUNT_MAX(vertex_count_max) {
-		material = std::make_unique<Material>("Simple");
-	}
-	void Polygon3DRenderer::Set(const Transformer& transformer) {
-
-	}
-	void Polygon3DRenderer::Render(int render_count, PrimitiveTopology topology) {
+	void PolygonRenderer::RenderIndexed(int render_count, PrimitiveTopology topology) {
 		Activate();
-		material->ActivateState();
-		material->ActivateShader3D();
 		Device::GetContext()->IASetPrimitiveTopology(static_cast<D3D11_PRIMITIVE_TOPOLOGY>(topology));
-		Device::GetContext()->Draw(render_count, 0);
+		Device::GetContext()->DrawIndexed(render_count, 0, 0);
 	}
 
+	//Polygon3DRenderer::Polygon3DRenderer(int struct_size, int vertex_count_max) :VertexBuffer(struct_size, vertex_count_max), STRUCT_SIZE(struct_size), VERTEX_COUNT_MAX(vertex_count_max) {
+	//}
+	//void Polygon3DRenderer::Render(int render_count, PrimitiveTopology topology) {
+	//	Activate();
+	//	Device::GetContext()->IASetPrimitiveTopology(static_cast<D3D11_PRIMITIVE_TOPOLOGY>(topology));
+	//	Device::GetContext()->Draw(render_count, 0);
+	//}
+	//void Polygon3DRenderer::RenderIndexed(int render_count, PrimitiveTopology topology) {
+	//	Activate();
+	//	Device::GetContext()->IASetPrimitiveTopology(static_cast<D3D11_PRIMITIVE_TOPOLOGY>(topology));
+	//	Device::GetContext()->DrawIndexed(render_count, 0, 0);
+	//}
 	//std::unique_ptr<VertexBuffer> SpriteRenderer::buffer;
 	//void SpriteRenderer::Initialize() {
 	//	buffer = std::make_unique<VertexBuffer>(sizeof(Vertex), 4);

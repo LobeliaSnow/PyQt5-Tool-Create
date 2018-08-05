@@ -248,7 +248,14 @@ namespace Lobelia {
 	public:
 		//Python用 Bufferを書き込み可能に作成した場合のみ使用可能
 		void Begin();
-		void Set(int byte_pos, std::vector<float> data);
+		//明示的インスタンス化によってバインドする
+		template<class T> void Set(int byte_pos, std::vector<T> data) {
+			T* temp = static_cast<T*>(resuorcePointer);
+			int index = byte_pos / 4;
+			for each(auto&& d in data) {
+				temp[index++] = d;
+			}
+		}
 		void End();
 	public:
 		//C++用
@@ -270,6 +277,12 @@ namespace Lobelia {
 		int STRUCT_SIZE;
 		int VERTEX_COUNT;
 	};
+	class IndexBuffer :public BufferBase {
+	public:
+		IndexBuffer(int vertex_count);
+		//index
+		void Activate(int start_vertex_location);
+	};
 	class ConstantBuffer :public BufferBase {
 	public:
 		//ShaderStageListがフラグになってます。
@@ -280,7 +293,6 @@ namespace Lobelia {
 		void CreateConstantBuffer(UINT stuct_size);
 		void SetFunctor(byte activate_shader_elements);
 	private:
-		ComPtr<ID3D11Buffer> buffer;
 		UINT slot;
 		std::vector<std::function<void()>> functor;
 	};
@@ -418,6 +430,7 @@ namespace Lobelia {
 	private:
 		ComPtr<ID3D11InputLayout> inputLayout;
 	};
+	extern std::string constantBufferInfo;
 	//特定の構文で書かれたシェーダーをインスタンシングやその他に対応させる
 	//構文
 	//ワールド変換編
@@ -463,14 +476,14 @@ namespace Lobelia {
 		void ActivateShader3D();
 		void ChangeDiffuseTexture(const char* file_name);
 		std::shared_ptr<Texture> GetDiffuseTexture();
-		void ChangeVS2DMemory(const char* data, int data_len, const char* entry, ShaderModel model, bool use_linkage);
-		void ChangeVS2DFile(const char* file_path, const char* entry, ShaderModel model, bool use_linkage);
-		void ChangePS2DMemory(const char* data, int data_len, const char* entry, ShaderModel model, bool use_linkage);
-		void ChangePS2DFile(const char* file_path, const char* entry, ShaderModel model, bool use_linkage);
-		void ChangeVS3DMemory(const char* data, int data_len, const char* entry, ShaderModel model, bool use_linkage);
-		void ChangeVS3DFile(const char* file_path, const char* entry, ShaderModel model, bool use_linkage);
-		void ChangePS3DMemory(const char* data, int data_len, const char* entry, ShaderModel model, bool use_linkage);
-		void ChangePS3DFile(const char* file_path, const char* entry, ShaderModel model, bool use_linkage);
+		void ChangeVS2DMemory(std::string data, int data_len, std::string entry, ShaderModel model, bool use_linkage);
+		void ChangeVS2DFile(std::string file_path, std::string entry, ShaderModel model, bool use_linkage);
+		void ChangePS2DMemory(std::string data, int data_len, std::string entry, ShaderModel model, bool use_linkage);
+		void ChangePS2DFile(std::string file_path, std::string entry, ShaderModel model, bool use_linkage);
+		void ChangeVS3DMemory(std::string data, int data_len, std::string entry, ShaderModel model, bool use_linkage);
+		void ChangeVS3DFile(std::string file_path, std::string entry, ShaderModel model, bool use_linkage);
+		void ChangePS3DMemory(std::string data, int data_len, std::string entry, ShaderModel model, bool use_linkage);
+		void ChangePS3DFile(std::string file_path, std::string entry, ShaderModel model, bool use_linkage);
 
 		//void ChangeBlendState();
 		//void ChangeSamplerState();
@@ -481,7 +494,7 @@ namespace Lobelia {
 		void CreateEmptyMaterial();
 		void CreateDefautRenderState();
 		void CreateDefaultShaders();
-		void CreateInputLayout(std::shared_ptr<VertexShader> vs, std::shared_ptr<InputLayout> input_layout);
+		void CreateInputLayout(std::shared_ptr<VertexShader>& vs, std::shared_ptr<InputLayout>& input_layout);
 	private:
 		std::string name;
 		std::shared_ptr<BlendState> blend;
@@ -503,7 +516,7 @@ namespace Lobelia {
 		//予約 インスタンシングを使用するかかどうかのフラグ
 		bool useInstancing;
 	};
-	
+
 	//----------------------------------------End Material------------------------------------------
 
 	//--------------------------------------------------------------------------------------------------
@@ -523,6 +536,36 @@ namespace Lobelia {
 		int posY;
 		int sizeX;
 		int sizeY;
+	};
+	//ビュー変換と射影変換用クラス
+	class Camera {
+	private:
+		struct CBData {
+			DirectX::XMMATRIX view;
+			DirectX::XMMATRIX projection;
+		};
+	public:
+		//Python用
+		Camera(int size_x, int size_y, float fov_rad = PI / 4.0f, float near_z = 1.0f, float far_z = 1000.0f);
+		~Camera() = default;
+		void SetPos(float x, float y, float z);
+		void SetAt(float x, float y, float z);
+		void SetUp(float x, float y, float z);
+		void Activate();
+	private:
+		static DirectX::XMMATRIX CreateProjection(float fov_rad, float aspect, float near_z, float far_z);
+		static DirectX::XMMATRIX CreateView(const DirectX::XMFLOAT4& pos, const DirectX::XMFLOAT4& at, const DirectX::XMFLOAT4&up);
+	private:
+		std::unique_ptr<ConstantBuffer> constantBuffer;
+		//プロジェクション用
+		float nearZ;
+		float farZ;
+		float fov;
+		float aspect;
+		//ビュー用
+		DirectX::XMFLOAT4 pos;
+		DirectX::XMFLOAT4 at;
+		DirectX::XMFLOAT4 up;
 	};
 	//----------------------------------------End Viewport------------------------------------------
 	//--------------------------------------------------------------------------------------------------
@@ -586,33 +629,37 @@ namespace Lobelia {
 	//		Begin Renderer
 	//
 	//--------------------------------------------------------------------------------------------------
-	class Polygon2DRenderer :public VertexBuffer {
+	class PolygonRenderer :public VertexBuffer {
 	public:
-		Polygon2DRenderer(int struct_size, int vertex_count_max);
-		~Polygon2DRenderer() = default;
+		PolygonRenderer(int struct_size, int vertex_count_max);
+		~PolygonRenderer() = default;
 	public:
 		//Python用
 		void Render(int render_count, PrimitiveTopology topology);
-	private:
-		const int STRUCT_SIZE;
-		const int VERTEX_COUNT_MAX;
-	};
-	//とりあえずは3Dの何かを描画するところから
-	class Polygon3DRenderer :public VertexBuffer {
-	public:
-		Polygon3DRenderer(int struct_size, int vertex_count_max);
-		~Polygon3DRenderer() = default;
-	public:
-		//Python用
-		void Set(const Transformer& transformer);
-		void Render(int render_count, PrimitiveTopology topology);
+		void RenderIndexed(int render_count, PrimitiveTopology topology);
 	private:
 		Transformer transformer;
-		//テスト用
-		std::unique_ptr<Material> material;
 	private:
 		const int STRUCT_SIZE;
 		const int VERTEX_COUNT_MAX;
 	};
+	////とりあえずは3Dの何かを描画するところから
+	//class Polygon3DRenderer :public VertexBuffer {
+	//public:
+	//	Polygon3DRenderer(int struct_size, int vertex_count_max);
+	//	~Polygon3DRenderer() = default;
+	//public:
+	//	//Python用
+	//	//void Set(const Transformer& transformer);
+	//	void Render(int render_count, PrimitiveTopology topology);
+	//	void RenderIndexed(int render_count, PrimitiveTopology topology);
+	//private:
+	//	Transformer transformer;
+	//	//テスト用
+	//	std::unique_ptr<Material> material;
+	//private:
+	//	const int STRUCT_SIZE;
+	//	const int VERTEX_COUNT_MAX;
+	//};
 	//----------------------------------------End Renderer-----------------------------------------
 }

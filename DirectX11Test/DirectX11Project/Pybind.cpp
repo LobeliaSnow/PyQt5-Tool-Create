@@ -160,13 +160,17 @@ PYBIND11_MODULE(DirectX11, m) {
 	py::class_<BufferBase>(m, "BufferBase")
 		.def(py::init())
 		.def("Begin", &BufferBase::Begin)
-		.def("Set", &VertexBuffer::Set)
+		.def("Set", &VertexBuffer::Set<float>)
+		.def("Set", &VertexBuffer::Set<int>)
 		.def("End", &BufferBase::End);
 
 	//継承関係
 	py::class_<VertexBuffer, BufferBase>(m, "VertexBuffer")
 		.def(py::init<int, int>())
 		.def("GetMaxCount", &VertexBuffer::GetMaxCount);
+	py::class_<IndexBuffer, BufferBase>(m, "IndexBuffer")
+		.def(py::init<int>())
+		.def("Activate", &IndexBuffer::Activate);
 	py::class_<ConstantBuffer, BufferBase>(m, "ConstantBuffer")
 		.def(py::init<UINT, UINT, byte>())
 		.def("Activate", &ConstantBuffer::Activate);
@@ -212,9 +216,11 @@ PYBIND11_MODULE(DirectX11, m) {
 		.def("SetLinkage", &Shader::SetLinkage);
 	py::class_<VertexShader, Shader>(m, "VertexShader")
 		.def(py::init<const char*, const char*, ShaderModel, bool>())
+		.def(py::init<const char*, int, const char*, ShaderModel, bool>())
 		.def("Set", &VertexShader::Set);
 	py::class_<PixelShader, Shader>(m, "PixelShader")
 		.def(py::init<const char*, const char*, ShaderModel, bool>())
+		.def(py::init<const char*, int, const char*, ShaderModel, bool>())
 		.def("Set", &PixelShader::Set);
 
 	py::class_<InputLayout>(m, "InputLayout")
@@ -240,6 +246,12 @@ PYBIND11_MODULE(DirectX11, m) {
 	py::class_<Viewport>(m, "Viewport")
 		.def(py::init<int, int, int, int>())
 		.def("Activate", &Viewport::Activate);
+	py::class_<Camera>(m, "Camera")
+		.def(py::init<int, int, float, float, float>())
+		.def("SetPos", &Camera::SetPos)
+		.def("SetAt", &Camera::SetAt)
+		.def("SetUp", &Camera::SetUp)
+		.def("Activate", &Camera::Activate);
 
 	py::class_<Transformer>(m, "Transformer")
 		.def(py::init())
@@ -268,12 +280,20 @@ PYBIND11_MODULE(DirectX11, m) {
 		.def("GetScale", &Transformer::GetScale)
 		.def("GetRollPitchYaw", &Transformer::GetRollPitchYaw);
 
-	py::class_<Polygon2DRenderer, VertexBuffer>(m, "Polygon2DRenderer")
+	py::class_<PolygonRenderer, VertexBuffer>(m, "PolygonRenderer")
 		.def(py::init<int, int>())
-		.def("Render", &Polygon2DRenderer::Render);
+		.def("Render", &PolygonRenderer::Render)
+		.def("RenderIndexed", &PolygonRenderer::RenderIndexed);
+	//py::class_<Polygon3DRenderer, VertexBuffer>(m, "Polygon3DRenderer")
+	//	.def(py::init<int, int>())
+	//	.def("Render", &Polygon3DRenderer::Render)
 
 	py::class_<Error>(m, "Error")
 		.def_static("ErrorBox", &Error::ErrorBox);
+
+	//シェーダーのヘッダー情報
+	m.attr("constantBufferInfo") = py::cast(constantBufferInfo);
+
 }
 #else
 //テスト用コード x86 Debug

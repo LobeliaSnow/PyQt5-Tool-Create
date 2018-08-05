@@ -3,6 +3,10 @@
 #include <limits>
 #include <DirectXMath.h>
 
+#ifndef PI
+#define PI 3.141592653589793f
+#endif
+
 namespace Lobelia {
 	/**
 	*@brief float‚Ì“™’l”»’è
