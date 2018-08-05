@@ -50,15 +50,13 @@ class MainWindow(QMainWindow):
         self.ui.execute_button.clicked.connect(self.ScriptExecute)
         self.ui.actionScriptManager.triggered.connect(self.OpenScriptManager)
         self.menuEnum = {"Script":1}
-        object2d = DX2DObject("test.jpg")
-        object2d.pos = [-0.5,0.5]
-        object2d.scale = [1.0,-1.0]
-        directxwidget.DirectXWidget.renderList += [object2d]
+        # object2d = DX2DObject("test.jpg")
+        # object2d.pos = [-0.5,0.5]
+        # object2d.scale = [1.0,-1.0]
+        # directxwidget.DirectXWidget.renderList += [object2d]
         #ScriptManagerウインドウのインスタンス生成
         self.ScriptManagerWindow = ScriptManager(self)
         self.ScriptManagerWindow.Initialize(self)
-
-        # SpriteRenderer.Initialize()
         
     def __del__(self):
         DirectX11.Device.Destroy()

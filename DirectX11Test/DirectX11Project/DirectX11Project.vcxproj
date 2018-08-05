@@ -177,6 +177,7 @@
     <ClInclude Include="Enum\TextureAccessFlag.hpp" />
     <ClInclude Include="Enum\TextureFormat.hpp" />
     <ClInclude Include="Error\ErrorCode.hpp" />
+    <ClInclude Include="Utility\Math.hpp" />
     <ClInclude Include="Utility\Utility.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

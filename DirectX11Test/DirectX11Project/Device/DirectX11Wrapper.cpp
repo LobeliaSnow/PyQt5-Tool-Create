@@ -579,6 +579,29 @@ namespace Lobelia {
 		Device::GetContext()->IASetVertexBuffers(0, 1, Get().GetAddressOf(), &strides, &offset);
 	}
 	int VertexBuffer::GetMaxCount() { return VERTEX_COUNT; }
+	ConstantBuffer::ConstantBuffer(UINT slot, UINT stuct_size, byte activate_shader_elements) :slot(slot) {
+		SetFunctor(activate_shader_elements);
+		CreateConstantBuffer(stuct_size);
+	}
+	//TODO  : BufferCreatorを使って書き直すこと
+	void ConstantBuffer::CreateConstantBuffer(UINT stuct_size) {
+		BufferBase::Create(Get().GetAddressOf(), nullptr, stuct_size, D3D11_USAGE_DEFAULT, D3D11_BIND_CONSTANT_BUFFER, 0, 0);
+	}
+	void ConstantBuffer::SetFunctor(byte activate_shader_elements) {
+		if (activate_shader_elements & static_cast<int>(ShaderStageList::VS))	functor.push_back([this]() {Device::GetContext()->VSSetConstantBuffers(slot, 1, buffer.GetAddressOf()); });
+		if (activate_shader_elements & static_cast<int>(ShaderStageList::PS))	functor.push_back([this]() {Device::GetContext()->PSSetConstantBuffers(slot, 1, buffer.GetAddressOf()); });
+		if (activate_shader_elements & static_cast<int>(ShaderStageList::HS))	functor.push_back([this]() {Device::GetContext()->HSSetConstantBuffers(slot, 1, buffer.GetAddressOf()); });
+		if (activate_shader_elements & static_cast<int>(ShaderStageList::GS))	functor.push_back([this]() {Device::GetContext()->GSSetConstantBuffers(slot, 1, buffer.GetAddressOf()); });
+		if (activate_shader_elements & static_cast<int>(ShaderStageList::DS))	functor.push_back([this]() {Device::GetContext()->DSSetConstantBuffers(slot, 1, buffer.GetAddressOf()); });
+		if (activate_shader_elements & static_cast<int>(ShaderStageList::CS))	functor.push_back([this]() {Device::GetContext()->CSSetConstantBuffers(slot, 1, buffer.GetAddressOf()); });
+	}
+	void ConstantBuffer::Activate(void* cb_struct) {
+		Device::GetContext()->UpdateSubresource(buffer.Get(), 0, nullptr, cb_struct, 0, 0);
+		for each(auto&& Set in functor) {
+			Set();
+		}
+	}
+
 	//------------------------------------------End Buffer-------------------------------------------
 
 	//--------------------------------------------------------------------------------------------------
@@ -799,7 +822,7 @@ namespace Lobelia {
 	//3D
 	std::string header3DInfo = {
 		"struct SIMPLE_VS_IN{\n"
-		"	float2 pos : POSITION;\n"
+		"	float3 pos : POSITION;\n"
 		"};\n"
 		"struct SIMPLE_PS_IN{\n"
 		"	float4 pos : SV_Position;\n"
@@ -878,6 +901,14 @@ namespace Lobelia {
 		rasterizer = std::make_shared<RasterizerState>(RasterizerPreset::NONE);
 		depthStencil = std::make_shared<DepthStencilState>(DepthPreset::ALWAYS, false, StencilDesc(), false);
 	}
+	//現状構想は、プログラマブルにできる関数を用意してそこにセマンティック通りに送り付ける
+	//2Dも3Dもストリームに流れる情報量は同じにすることで、同じシェーダーを使えるのではないかという目論見
+	//なので2Dも法線を持つし、接線も持つ
+	//これで同じマテリアルを使いまわして2Dも3Dも一つのシェーダーに見せかけることができるのではないかな
+	//具体的な方法はまだ考えていないが、シェーダーリンケージがワンチャン使えるかも。
+	//モデルの情報だけ所持しているクラスも出る予定
+	//複数テクスチャ用にUVも1メッシュ当たり4つまで許容予定、所持してなければ全て0番目のUVが入る
+	//ステートに関して、メッシュフィルターなるものを作ってそいつがモデルデータを持って且つ、ラスタライザーやトポロジも持つようになる予定
 	void Material::CreateDefaultShaders() {
 		//シェーダーコード作成
 		std::string shader2DCode = constantBufferInfo;
@@ -889,22 +920,69 @@ namespace Lobelia {
 		shader3DCode += simpleShader3DVS;
 		shader3DCode += simpleShader3DPS;
 		std::string normal, skinning, instancing, skinningInstancing;
-		ShaderConverter::Converte3D(shader3DCode, normal, skinning, instancing, skinningInstancing);
-		//この先シェーダー
-		vs = std::make_shared<VertexShader>(shader2DCode.c_str(), shader2DCode.size(), "SimpleVS", ShaderModel::_4_0);
-		ps = std::make_shared<PixelShader>(shader2DCode.c_str(), shader2DCode.size(), "SimplePS", ShaderModel::_4_0);
-		//入力レイアウト
-		std::unique_ptr<Reflection> reflector = std::make_unique<Reflection>(vs.get());
-		inputLayout = std::make_unique<InputLayout>(vs.get(), reflector.get());
+		//とりあえず放置
+		//ShaderConverter::Converte3D(shader3DCode, normal, skinning, instancing, skinningInstancing);
+		//この先シェーダー とりあえず適当
+		ChangeVS2DMemory(shader2DCode.c_str(), shader2DCode.size(), "SimpleVS", ShaderModel::_4_0, false);
+		ChangePS2DMemory(shader2DCode.c_str(), shader2DCode.size(), "SimplePS", ShaderModel::_4_0, false);
+		ChangeVS3DMemory(shader3DCode.c_str(), shader3DCode.size(), "SimpleVS", ShaderModel::_4_0, false);
+		ChangePS3DMemory(shader3DCode.c_str(), shader3DCode.size(), "SimplePS", ShaderModel::_4_0, false);
 	}
-	void Material::Activate() {
+	void Material::ActivateState() {
 		blend->Set();
 		sampler->Set();
 		rasterizer->Set();
 		depthStencil->Set();
-		vs->Set();
-		ps->Set();
-		inputLayout->Set();
+		if (diffuseTexture)diffuseTexture->Set(0, ShaderStageList::PS);
+	}
+	void Material::ActivateShader2D(){
+		vs2D->Set();
+		inputLayout2D->Set();
+		ps2D->Set();
+	}
+	void Material::ActivateShader3D() {
+		vs3D->Set();
+		inputLayout3D->Set();
+		ps3D->Set();
+	}
+	void Material::ChangeDiffuseTexture(const char* file_name) {
+		diffuseTexture = TextureManager::Load(file_name);
+	}
+	void Material::CreateInputLayout(std::shared_ptr<VertexShader> vs, std::shared_ptr<InputLayout> inputLayout) {
+		//入力レイアウト
+		std::unique_ptr<Reflection> reflector = std::make_unique<Reflection>(vs.get());
+		inputLayout = std::make_unique<InputLayout>(vs.get(), reflector.get());
+	}
+	std::shared_ptr<Texture> Material::GetDiffuseTexture() { return diffuseTexture; }
+
+	void Material::ChangeVS2DMemory(const char* data, int data_len, const char* entry, ShaderModel model, bool use_linkage) {
+		vs2D = std::make_shared<VertexShader>(data, data_len, entry, model, use_linkage);
+		CreateInputLayout(vs2D, inputLayout2D);
+	}
+	void Material::ChangeVS2DFile(const char* file_path, const char* entry, ShaderModel model, bool use_linkage) {
+		vs2D = std::make_shared<VertexShader>(file_path, entry, model, use_linkage);
+		CreateInputLayout(vs2D, inputLayout2D);
+	}
+	void Material::ChangePS2DMemory(const char* data, int data_len, const char* entry, ShaderModel model, bool use_linkage) {
+		ps2D = std::make_shared<PixelShader>(data, data_len, entry, model, use_linkage);
+	}
+	void Material::ChangePS2DFile(const char* file_path, const char* entry, ShaderModel model, bool use_linkage) {
+		ps2D = std::make_shared<PixelShader>(file_path, entry, model, use_linkage);
+	}
+
+	void Material::ChangeVS3DMemory(const char* data, int data_len, const char* entry, ShaderModel model, bool use_linkage) {
+		vs3D = std::make_shared<VertexShader>(data, data_len, entry, model, use_linkage);
+		CreateInputLayout(vs3D, inputLayout3D);
+	}
+	void Material::ChangeVS3DFile(const char* file_path, const char* entry, ShaderModel model, bool use_linkage) {
+		vs3D = std::make_shared<VertexShader>(file_path, entry, model, use_linkage);
+		CreateInputLayout(vs3D, inputLayout3D);
+	}
+	void Material::ChangePS3DMemory(const char* data, int data_len, const char* entry, ShaderModel model, bool use_linkage) {
+		ps3D = std::make_shared<PixelShader>(data, data_len, entry, model, use_linkage);
+	}
+	void Material::ChangePS3DFile(const char* file_path, const char* entry, ShaderModel model, bool use_linkage) {
+		ps3D = std::make_shared<PixelShader>(file_path, entry, model, use_linkage);
 	}
 	//----------------------------------------End Material------------------------------------------
 
@@ -928,6 +1006,101 @@ namespace Lobelia {
 
 	//--------------------------------------------------------------------------------------------------
 	//
+	//		Begin Transformer
+	//
+	//--------------------------------------------------------------------------------------------------
+	Transformer::Transformer() {
+		world = scalling = rotation = translate = DirectX::XMMatrixIdentity();
+	}
+	void Transformer::CalcTranslateMatrix() { translate = DirectX::XMMatrixTranslation(position.x, position.y, position.z); }
+	void Transformer::CalcScallingMatrix() {
+		scalling = DirectX::XMMatrixScaling(scale.x, scale.y, scale.z);
+		/*scalling.m[0][0] *= -1;*/
+	}
+	//移動
+	void Transformer::Translation(const Vector3& pos) {
+		position = pos;
+		CalcTranslateMatrix();
+	}
+	void Transformer::Translation(float x, float y, float z) {
+		position.x = x; position.y = y; position.z = z;
+		CalcTranslateMatrix();
+	}
+	void Transformer::TranslationMove(const Vector3& move) {
+		position += move;
+		CalcTranslateMatrix();
+	}
+	void Transformer::TranslationMove(float x, float y, float z) {
+		position.x += x; position.y += y; position.z += z;
+		CalcTranslateMatrix();
+	}
+	//回転
+	void Transformer::RotationQuaternion(const DirectX::XMVECTOR& quaternion) {
+		rotation = DirectX::XMMatrixRotationQuaternion(quaternion);
+		//ここでトランスフォームの回転にRPYの回転量算出
+	}
+	void Transformer::RotationAxis(const Vector3& axis, float rad) {
+		rotation = DirectX::XMMatrixRotationAxis(DirectX::XMVECTOR{ axis.x,axis.y,axis.z,1.0f }, rad);
+		//ここでトランスフォームの回転にRPYの回転量算出
+	}
+	void Transformer::RotationRollPitchYaw(const Vector3& rpy) {
+		this->rpy = rpy;
+		rotation = DirectX::XMMatrixRotationRollPitchYaw(this->rpy.x, this->rpy.y, this->rpy.z);
+	}
+	void Transformer::RotationYAxis(float rad) {
+		this->rpy.x = 0.0f;	this->rpy.y = rad; this->rpy.z = 0.0f;
+		rotation = DirectX::XMMatrixRotationY(this->rpy.y);
+	}
+	//拡縮
+	void Transformer::Scalling(const Vector3& scale) {
+		this->scale = scale;
+		CalcScallingMatrix();
+	}
+	void Transformer::Scalling(float x, float y, float z) {
+		this->scale.x = x; this->scale.y = y; this->scale.z = z;
+		CalcScallingMatrix();
+	}
+	void Transformer::Scalling(float scale) {
+		this->scale.x = scale; this->scale.y = scale; this->scale.z = scale;
+		CalcScallingMatrix();
+	}
+	//更新処理
+	void Transformer::CalcWorldMatrix() {
+		//親子関係あるさいは自分のtransformは親から見たものになるが、ワールドの状態でも欲しいかな？
+		world = scalling;
+		world *= rotation;
+		//ここは少し審議が必要
+		world *= translate;
+		//↑位置xを反転させる(FBX問題解消)
+	}
+	DirectX::XMMATRIX Transformer::GetTranslateMatrix() { return translate; }
+	DirectX::XMMATRIX Transformer::CalcInverseTranslateMatrix() {
+		DirectX::XMVECTOR arg = {};
+		return DirectX::XMMatrixInverse(&arg, translate);
+	}
+	DirectX::XMMATRIX Transformer::GetScallingMatrix() { return scalling; }
+	DirectX::XMMATRIX Transformer::CalcInverseScallingMatrix() {
+		DirectX::XMVECTOR arg = {};
+		return DirectX::XMMatrixInverse(&arg, scalling);
+	}
+	DirectX::XMMATRIX Transformer::GetRotationMatrix() { return rotation; }
+	DirectX::XMMATRIX Transformer::CalcInverseRotationMatrix() {
+		DirectX::XMVECTOR arg = {};
+		return DirectX::XMMatrixInverse(&arg, rotation);
+	}
+	DirectX::XMMATRIX Transformer::GetWorldMatrixTranspose() { return DirectX::XMMatrixTranspose(world); }
+	DirectX::XMMATRIX Transformer::GetWorldMatrix() { return world; }
+	DirectX::XMMATRIX Transformer::CalcInverseWorldMatrix() {
+		DirectX::XMVECTOR arg = {};
+		return  DirectX::XMMatrixInverse(&arg, world);
+	}
+	const Vector3& Transformer::GetPos() { return position; }
+	const Vector3& Transformer::GetScale() { return scale; }
+	const Vector3& Transformer::GetRollPitchYaw() { return rpy; }
+	//-------------------------------------End Transformer----------------------------------------
+
+	//--------------------------------------------------------------------------------------------------
+	//
 	//		Begin Renderer
 	//
 	//--------------------------------------------------------------------------------------------------
@@ -938,6 +1111,31 @@ namespace Lobelia {
 		Device::GetContext()->IASetPrimitiveTopology(static_cast<D3D11_PRIMITIVE_TOPOLOGY>(topology));
 		Device::GetContext()->Draw(render_count, 0);
 	}
+
+	Polygon3DRenderer::Polygon3DRenderer(int struct_size, int vertex_count_max) :VertexBuffer(struct_size, vertex_count_max), STRUCT_SIZE(struct_size), VERTEX_COUNT_MAX(vertex_count_max) {
+		material = std::make_unique<Material>("Simple");
+	}
+	void Polygon3DRenderer::Set(const Transformer& transformer) {
+
+	}
+	void Polygon3DRenderer::Render(int render_count, PrimitiveTopology topology) {
+		Activate();
+		material->ActivateState();
+		material->ActivateShader3D();
+		Device::GetContext()->IASetPrimitiveTopology(static_cast<D3D11_PRIMITIVE_TOPOLOGY>(topology));
+		Device::GetContext()->Draw(render_count, 0);
+	}
+
+	//std::unique_ptr<VertexBuffer> SpriteRenderer::buffer;
+	//void SpriteRenderer::Initialize() {
+	//	buffer = std::make_unique<VertexBuffer>(sizeof(Vertex), 4);
+	//}
+	//void SpriteRenderer::Render(std::shared_ptr<Texture>& texture, int x, int y, int width, int height, float rotation, int uv_begin_x, int uv_begin_y, int uv_end_x, int uv_end_y, int a, int r, int g, int b) {
+	//	buffer->Begin();
+	//	std::vector<float> vertices;
+	//	buffer->End();
+	//	buffer->Activate();
+	//}
 	//----------------------------------------End Renderer-----------------------------------------
 }
 

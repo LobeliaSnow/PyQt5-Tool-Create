@@ -41,9 +41,9 @@ async def DisplayDate1(num, loop, ):
 #ジェネレーターベースコルーチンとネイティブコルーチンの相互運用
 import types 
 @types.coroutine
-def SleepFunc():
+def WaitForSecond(time):
     #ランダムな時間を待つ
-    yield from asyncio.sleep(random.randint(0, 5))
+    yield from asyncio.sleep(time)
 async def DisplayDate2(num, loop, ):
     endTime = loop.time() + 50.0
     while True:
@@ -51,7 +51,7 @@ async def DisplayDate2(num, loop, ):
         if (loop.time() + 1.0) >= endTime:
             break
         #ランダムな時間を待つ
-        await SleepFunc()
+        await WaitForSecond(2.0)
 
 
 def Initialize():

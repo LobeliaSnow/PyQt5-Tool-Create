@@ -54,6 +54,9 @@
     <ClInclude Include="Enum\Extension.hpp">
       <Filter>ヘッダー ファイル\Enum</Filter>
     </ClInclude>
+    <ClInclude Include="Utility\Math.hpp">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Device\DirectX11Wrapper.cpp">

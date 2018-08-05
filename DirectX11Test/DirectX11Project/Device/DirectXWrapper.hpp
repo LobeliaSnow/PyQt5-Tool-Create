@@ -10,7 +10,6 @@
 #include <Windows.h>
 #include <d3d11.h>
 #define _XM_NO_INTRINSICS_
-#include <DirectXMath.h>
 #include "../D3DCompiler/d3dcompiler.h"
 #include "../DirectXTex/DirectXTex.h"
 #include <wrl.h>
@@ -27,6 +26,7 @@
 #include "../Enum/PrimitiveTopology.hpp"
 
 #include "../Utility/Utility.hpp"
+#include "../Utility/Math.hpp"
 #include "../Enum/Extension.hpp"
 
 using Microsoft::WRL::ComPtr;
@@ -270,6 +270,20 @@ namespace Lobelia {
 		int STRUCT_SIZE;
 		int VERTEX_COUNT;
 	};
+	class ConstantBuffer :public BufferBase {
+	public:
+		//ShaderStageListがフラグになってます。
+		ConstantBuffer(UINT slot, UINT stuct_size, byte activate_shader_elements);
+		~ConstantBuffer() = default;
+		void Activate(void* cb_struct);
+	private:
+		void CreateConstantBuffer(UINT stuct_size);
+		void SetFunctor(byte activate_shader_elements);
+	private:
+		ComPtr<ID3D11Buffer> buffer;
+		UINT slot;
+		std::vector<std::function<void()>> functor;
+	};
 	//------------------------------------------End Buffer-------------------------------------------
 
 	//--------------------------------------------------------------------------------------------------
@@ -444,12 +458,30 @@ namespace Lobelia {
 		~Material() = default;
 	public:
 		//Python用
-		void Activate();
+		void ActivateState();
+		void ActivateShader2D();
+		void ActivateShader3D();
+		void ChangeDiffuseTexture(const char* file_name);
+		std::shared_ptr<Texture> GetDiffuseTexture();
+		void ChangeVS2DMemory(const char* data, int data_len, const char* entry, ShaderModel model, bool use_linkage);
+		void ChangeVS2DFile(const char* file_path, const char* entry, ShaderModel model, bool use_linkage);
+		void ChangePS2DMemory(const char* data, int data_len, const char* entry, ShaderModel model, bool use_linkage);
+		void ChangePS2DFile(const char* file_path, const char* entry, ShaderModel model, bool use_linkage);
+		void ChangeVS3DMemory(const char* data, int data_len, const char* entry, ShaderModel model, bool use_linkage);
+		void ChangeVS3DFile(const char* file_path, const char* entry, ShaderModel model, bool use_linkage);
+		void ChangePS3DMemory(const char* data, int data_len, const char* entry, ShaderModel model, bool use_linkage);
+		void ChangePS3DFile(const char* file_path, const char* entry, ShaderModel model, bool use_linkage);
+
+		//void ChangeBlendState();
+		//void ChangeSamplerState();
+		//void ChangeRasterizerState();
+		//void ChangeBlendState();
 	private:
 		//デフォルトを作成
 		void CreateEmptyMaterial();
 		void CreateDefautRenderState();
 		void CreateDefaultShaders();
+		void CreateInputLayout(std::shared_ptr<VertexShader> vs, std::shared_ptr<InputLayout> input_layout);
 	private:
 		std::string name;
 		std::shared_ptr<BlendState> blend;
@@ -457,17 +489,21 @@ namespace Lobelia {
 		std::shared_ptr<RasterizerState> rasterizer;
 		std::shared_ptr<DepthStencilState> depthStencil;
 		//後にHSDSGS等増えるのと、スキニング用やインスタンシング用も増える
-		std::shared_ptr<VertexShader> vs;
-		std::shared_ptr<InputLayout> inputLayout;
-		std::shared_ptr<PixelShader> ps;
+		std::shared_ptr<VertexShader> vs2D;
+		std::shared_ptr<InputLayout> inputLayout2D;
+		std::shared_ptr<PixelShader> ps2D;
+		std::shared_ptr<VertexShader> vs3D;
+		std::shared_ptr<InputLayout> inputLayout3D;
+		std::shared_ptr<PixelShader> ps3D;
 		//Textureの管理棟はC++側で作る
 		//その際Flyweightを適用したのち、管理側ではweak_ptrを使って前回の過ち(*)を訂正する
 		//*使い終わってもアプリが終了するまで解放されない
 		//そのうち、複数テクスチャに対応したい
-		std::shared_ptr<Texture> texture;
+		std::shared_ptr<Texture> diffuseTexture;
 		//予約 インスタンシングを使用するかかどうかのフラグ
 		bool useInstancing;
 	};
+	
 	//----------------------------------------End Material------------------------------------------
 
 	//--------------------------------------------------------------------------------------------------
@@ -489,7 +525,62 @@ namespace Lobelia {
 		int sizeY;
 	};
 	//----------------------------------------End Viewport------------------------------------------
-
+	//--------------------------------------------------------------------------------------------------
+	//
+	//		Begin Transformer
+	//
+	//--------------------------------------------------------------------------------------------------
+	class Transformer {
+	public:
+		//Python用
+		Transformer();
+		~Transformer() = default;
+		//移動 行列計算も行われます
+		void Translation(const Vector3& pos);
+		void Translation(float x, float y, float z);
+		void TranslationMove(const Vector3& move);
+		void TranslationMove(float x, float y, float z);
+		//回転 行列計算も行われます
+		void RotationQuaternion(const DirectX::XMVECTOR& quaternion);
+		void RotationAxis(const Vector3& axis, float rad);
+		void RotationRollPitchYaw(const Vector3& rpy);
+		void RotationYAxis(float rad);
+		//拡縮 行列計算も行われます
+		void Scalling(const Vector3& scale);
+		void Scalling(float x, float y, float z);
+		void Scalling(float scale);
+		//更新処理
+		void CalcWorldMatrix();
+		//行列取得
+		DirectX::XMMATRIX GetTranslateMatrix();
+		DirectX::XMMATRIX CalcInverseTranslateMatrix();
+		DirectX::XMMATRIX GetScallingMatrix();
+		DirectX::XMMATRIX CalcInverseScallingMatrix();
+		DirectX::XMMATRIX GetRotationMatrix();
+		DirectX::XMMATRIX CalcInverseRotationMatrix();
+		//転置行列を返します
+		DirectX::XMMATRIX GetWorldMatrix();
+		DirectX::XMMATRIX GetWorldMatrixTranspose();
+		DirectX::XMMATRIX CalcInverseWorldMatrix();
+		const Vector3& GetPos();
+		const Vector3& GetScale();
+		const Vector3& GetRollPitchYaw();
+	private:
+		//transformから移動行列生成
+		void CalcTranslateMatrix();
+		//transformから拡縮行列生成
+		void CalcScallingMatrix();
+	private:
+		Vector3 position;
+		Vector3 scale;
+		Vector3 rpy;
+		//そのうちXMFLOAT4X4に変換
+		DirectX::XMMATRIX world;
+		DirectX::XMMATRIX translate;
+		DirectX::XMMATRIX scalling;
+		DirectX::XMMATRIX rotation;
+	};
+	//-------------------------------------End Transformer----------------------------------------
 	//--------------------------------------------------------------------------------------------------
 	//
 	//		Begin Renderer
@@ -502,6 +593,23 @@ namespace Lobelia {
 	public:
 		//Python用
 		void Render(int render_count, PrimitiveTopology topology);
+	private:
+		const int STRUCT_SIZE;
+		const int VERTEX_COUNT_MAX;
+	};
+	//とりあえずは3Dの何かを描画するところから
+	class Polygon3DRenderer :public VertexBuffer {
+	public:
+		Polygon3DRenderer(int struct_size, int vertex_count_max);
+		~Polygon3DRenderer() = default;
+	public:
+		//Python用
+		void Set(const Transformer& transformer);
+		void Render(int render_count, PrimitiveTopology topology);
+	private:
+		Transformer transformer;
+		//テスト用
+		std::unique_ptr<Material> material;
 	private:
 		const int STRUCT_SIZE;
 		const int VERTEX_COUNT_MAX;

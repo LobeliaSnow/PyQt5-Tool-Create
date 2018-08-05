@@ -14,6 +14,8 @@ namespace py = pybind11;
 #ifndef _DEBUG 
 #define OUTPUT_PYTHON
 #endif
+
+//x64 Release
 #ifdef OUTPUT_PYTHON
 PYBIND11_MODULE(DirectX11, m) {
 	m.doc() = "DirectX11WrpperLibrary";
@@ -93,7 +95,6 @@ PYBIND11_MODULE(DirectX11, m) {
 		.value("ALWAYS", DepthPreset::ALWAYS)
 		.value("MAX", DepthPreset::MAX)
 		.export_values();
-
 	py::enum_<PrimitiveTopology>(m, "PrimitiveTopology")
 		.value("POINT_LIST", PrimitiveTopology::POINT_LIST)
 		.value("LINE_STRIP", PrimitiveTopology::LINE_STRIP)
@@ -101,7 +102,6 @@ PYBIND11_MODULE(DirectX11, m) {
 		.value("TRIANGLE_STRIP", PrimitiveTopology::TRIANGLE_STRIP)
 		.value("TRIANGLE_LIST", PrimitiveTopology::TRIANGLE_LIST)
 		.export_values();
-
 	py::enum_<StencilDesc::Face::Operation>(m, "SFaceOperation")
 		.value("KEEP", StencilDesc::Face::Operation::KEEP)
 		.value("ZERO", StencilDesc::Face::Operation::ZERO)
@@ -167,8 +167,10 @@ PYBIND11_MODULE(DirectX11, m) {
 	py::class_<VertexBuffer, BufferBase>(m, "VertexBuffer")
 		.def(py::init<int, int>())
 		.def("GetMaxCount", &VertexBuffer::GetMaxCount);
+	py::class_<ConstantBuffer, BufferBase>(m, "ConstantBuffer")
+		.def(py::init<UINT, UINT, byte>())
+		.def("Activate", &ConstantBuffer::Activate);
 
-	//バインドできない、直さないと。。。
 	py::class_<BlendState>(m, "BlendState")
 		.def(py::init<BlendPreset, bool, bool>())
 		.def("Set", &BlendState::Set);
@@ -222,11 +224,49 @@ PYBIND11_MODULE(DirectX11, m) {
 	//とりあえずステートめんどいからマテリアルバインドでテスト
 	py::class_<Material>(m, "Material")
 		.def(py::init<const char*>())
-		.def("Activate", &Material::Activate);
+		.def("ActivateState", &Material::ActivateState)
+		.def("ActivateShader2D", &Material::ActivateShader2D)
+		.def("ActivateShader3D", &Material::ActivateShader3D)
+		.def("ChangeVS2DMemory", &Material::ChangeVS2DMemory)
+		.def("ChangeVS2DFile", &Material::ChangeVS2DFile)
+		.def("ChangePS2DMemory", &Material::ChangePS2DMemory)
+		.def("ChangePS2DFile", &Material::ChangePS2DFile)
+		.def("ChangeVS3DMemory", &Material::ChangeVS3DMemory)
+		.def("ChangeVS3DFile", &Material::ChangeVS3DFile)
+		.def("ChangePS3DMemory", &Material::ChangePS3DMemory)
+		.def("ChangePS3DFile", &Material::ChangePS3DFile)
+		.def("ChangeDiffuseTexture", &Material::ChangeDiffuseTexture);
 
 	py::class_<Viewport>(m, "Viewport")
 		.def(py::init<int, int, int, int>())
 		.def("Activate", &Viewport::Activate);
+
+	py::class_<Transformer>(m, "Transformer")
+		.def(py::init())
+		.def("Translation", (void(Transformer::*)(const Vector3&))&Transformer::Translation)
+		.def("Translation", (void(Transformer::*)(float, float, float))&Transformer::Translation)
+		.def("TranslationMove", (void(Transformer::*)(const Vector3&))&Transformer::TranslationMove)
+		.def("TranslationMove", (void(Transformer::*)(float, float, float))&Transformer::TranslationMove)
+		.def("RotationQuaternion", &Transformer::RotationQuaternion)
+		.def("RotationAxis", &Transformer::RotationAxis)
+		.def("RotationRollPitchYaw", &Transformer::RotationRollPitchYaw)
+		.def("RotationYAxis", &Transformer::RotationYAxis)
+		.def("Scalling", (void(Transformer::*)(const Vector3&))&Transformer::Scalling)
+		.def("Scalling", (void(Transformer::*)(float, float, float))&Transformer::Scalling)
+		.def("Scalling", (void(Transformer::*)(float))&Transformer::Scalling)
+		.def("CalcWorldMatrix", &Transformer::CalcWorldMatrix)
+		.def("GetTranslateMatrix", &Transformer::GetTranslateMatrix)
+		.def("CalcInverseTranslateMatrix", &Transformer::CalcInverseTranslateMatrix)
+		.def("GetScallingMatrix", &Transformer::GetScallingMatrix)
+		.def("CalcInverseScallingMatrix", &Transformer::CalcInverseScallingMatrix)
+		.def("GetRotationMatrix", &Transformer::GetRotationMatrix)
+		.def("CalcInverseRotationMatrix", &Transformer::CalcInverseRotationMatrix)
+		.def("GetWorldMatrix", &Transformer::GetWorldMatrix)
+		.def("GetWorldMatrixTranspose", &Transformer::GetWorldMatrixTranspose)
+		.def("CalcInverseWorldMatrix", &Transformer::CalcInverseWorldMatrix)
+		.def("GetPos", &Transformer::GetPos)
+		.def("GetScale", &Transformer::GetScale)
+		.def("GetRollPitchYaw", &Transformer::GetRollPitchYaw);
 
 	py::class_<Polygon2DRenderer, VertexBuffer>(m, "Polygon2DRenderer")
 		.def(py::init<int, int>())
@@ -236,7 +276,7 @@ PYBIND11_MODULE(DirectX11, m) {
 		.def_static("ErrorBox", &Error::ErrorBox);
 }
 #else
-//テスト用コード
+//テスト用コード x86 Debug
 #include "CPPDLLHeader.hpp"
 std::unique_ptr<SwapChain> StaticField::swapChain;
 std::unique_ptr<Viewport> StaticField::viewport;
@@ -266,7 +306,7 @@ DLLEXPORT void Update() {
 	StaticField::swapChain->Clear(0.0f, 0.0f, 0.0f, 0.0f);
 	StaticField::viewport->Activate();
 	StaticField::material->Activate();
-	StaticField::renderer->Render(3, PrimitiveTopology::POINT_LIST);
+	StaticField::renderer->Render(3, PrimitiveTopology::LINE_STRIP);
 	StaticField::swapChain->Present(1);
 }
 DLLEXPORT void Finalize() {

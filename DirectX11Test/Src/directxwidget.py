@@ -21,16 +21,16 @@ class DirectXWidget(QOpenGLWidget):
         self.swapChain = DirectX11.SwapChain(self.winId().ascapsule(), x, y, sampleDesc)
         self.material = DirectX11.Material("Simple")
         self.viewport = DirectX11.Viewport(0,0,x, y)
-        self.renderer = DirectX11.Polygon2DRenderer(8,8)
-        self.renderer.Begin()
-        vertices = [0.0]
-        for i in range(7):
-            point = random.random()
-            vertices += [point]    
-        self.renderer.Set(0, vertices)
-        self.renderer.End()
-        self.renderCount = 8
-        self.renderTopology = DirectX11.PrimitiveTopology.LINE_STRIP
+        # self.renderer = DirectX11.Polygon2DRenderer(8,8)
+        # self.renderer.Begin()
+        # vertices = [0.0]
+        # for i in range(7):
+        #     point = random.random()
+        #     vertices += [point]    
+        # self.renderer.Set(0, vertices)
+        # self.renderer.End()
+        # self.renderCount = 8
+        # self.renderTopology = DirectX11.PrimitiveTopology.LINE_STRIP
         self.timerId = self.startTimer(500)
         
     def GetRendere(self):
@@ -43,10 +43,11 @@ class DirectXWidget(QOpenGLWidget):
         self.swapChain.Clear(0, 0, 0, 0)
         self.viewport.Activate()
         self.material.Activate()
-        self.renderer.Render(self.renderCount,self.renderTopology)
+        # self.renderer.Render(self.renderCount,self.renderTopology)
         for render in DirectXWidget.renderList:
             render.Render()
         self.swapChain.Present(1)
+
     #タイマーイベントで定期的に描画内容更新
     #http://melpystudio.blog82.fc2.com/blog-entry-153.html?sp
     def timerEvent(self, event):
