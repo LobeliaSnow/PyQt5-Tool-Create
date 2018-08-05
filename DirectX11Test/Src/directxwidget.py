@@ -19,8 +19,11 @@ class DirectXWidget(QOpenGLWidget):
         x = 1050
         y = 630
         self.swapChain = DirectX11.SwapChain(self.winId().ascapsule(), x, y, sampleDesc)
-        self.material = DirectX11.Material("Simple")
         self.viewport = DirectX11.Viewport(0,0,x, y)
+        self.camera = DirectX11.Camera(x,y,3.14/4.0,1.0,1000.0)
+        self.camera.SetPos(300,300,300)
+        self.camera.SetAt(0,0,0)
+        self.camera.SetUp(0,1,0)
         # self.renderer = DirectX11.Polygon2DRenderer(8,8)
         # self.renderer.Begin()
         # vertices = [0.0]
@@ -42,7 +45,7 @@ class DirectXWidget(QOpenGLWidget):
     def paintGL(self):
         self.swapChain.Clear(0, 0, 0, 0)
         self.viewport.Activate()
-        self.material.Activate()
+        self.camera.Activate()
         # self.renderer.Render(self.renderCount,self.renderTopology)
         for render in DirectXWidget.renderList:
             render.Render()

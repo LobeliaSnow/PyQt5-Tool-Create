@@ -1,6 +1,9 @@
 import json
 import struct
 import Plugin.JsonViewer
+import directxwidget
+import DirectX11
+
 #コンスタントバッファの値でif文が書かれて、全スレッドで確定するならばif文は最適化されるかも
 
 #文字列に対しての数を割り振り
@@ -63,6 +66,34 @@ def VariableFormatDataLength(data_format):
         elif c == "f":
             ret += 4
     return ret
+    
+class GLTFRenderer(directxwidget.RenderObject):
+    def __init__(self):
+        super(GLTFRenderer,self).__init__()
+        self.renderer = DirectX11.PolygonRenderer(12,15000)
+        self.indexBuffer = DirectX11.IndexBuffer(15000)
+        self.count = 0
+        self.material = DirectX11.Material("Simple")
+
+    def SetIndexBuffer(self,indices):
+        self.indexBuffer.Begin()
+        self.indexBuffer.Set(0,indices)
+        self.indexBuffer.End()
+        
+    def SetVertices(self,vertices):
+        self.renderer.Begin()
+        self.renderer.Set(0,vertices)
+        self.renderer.End()
+        
+    def SetCount(self,count):
+        self.count = count
+        
+    def Render(self):
+        self.material.ActivateState()
+        self.material.ActivateShader3D()
+        self.indexBuffer.Activate(0)
+        self.renderer.RenderIndexed(self.count,DirectX11.PrimitiveTopology.TRIANGLE_LIST)
+
 
 #glTFの情報読みます
 #まだまだがばがば、ほしい情報はあまりとれていない
@@ -96,13 +127,18 @@ def Initialize(parent):
             modelDict["indices"] = data[primitive["indices"]]
             for attribute in primitive["attributes"]:
                 modelDict[attribute] = data[primitive["attributes"][attribute]]
+    renderer = GLTFRenderer()
+    renderer.SetIndexBuffer(modelDict["indices"])
+    renderer.SetVertices(modelDict["POSITION"])
+    renderer.SetCount(len(modelDict["POSITION"]))
+    directxwidget.DirectXWidget.renderList += [renderer]
+
     #JsonViewerがプラグインとして読み込まれていた場合は
     #ディクショナリをそのビュワーに登録
     try:
         parent.jsonViewer.OpenJsonDict(modelDict)
     except NameError:
         pass
-        
             
 if __name__ == '__main__':
     Initialize(None)
