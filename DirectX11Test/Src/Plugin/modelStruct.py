@@ -3,6 +3,9 @@ import struct
 import Plugin.JsonViewer
 import directxwidget
 import DirectX11
+import sys
+import os
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 #コンスタントバッファの値でif文が書かれて、全スレッドで確定するならばif文は最適化されるかも
 
@@ -132,13 +135,12 @@ def Initialize(parent):
     renderer.SetVertices(modelDict["POSITION"])
     renderer.SetCount(len(modelDict["POSITION"]))
     directxwidget.DirectXWidget.renderList += [renderer]
-
     #JsonViewerがプラグインとして読み込まれていた場合は
     #ディクショナリをそのビュワーに登録
     try:
         parent.jsonViewer.OpenJsonDict(modelDict)
     except NameError:
         pass
-            
+
 if __name__ == '__main__':
     Initialize(None)

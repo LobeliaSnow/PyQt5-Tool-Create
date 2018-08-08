@@ -74,9 +74,9 @@ class JsonViewerWidget(QWidget):
         # items = ParseJson(jdict)
         # self.ui.treeWidget.addTopLevelItems(items)
         #この先Qt初期化
-        menu = parent.AddMenu("&Window")
-        if menu == None:
+        if parent.FindMenu("&Window") == None:
             return
+        menu = parent.AddMenu("&Window")
         _translate = QtCore.QCoreApplication.translate
         action = QtWidgets.QAction(parent)
         action.triggered.connect(self.Show)

@@ -476,6 +476,8 @@ namespace Lobelia {
 		void ActivateShader3D();
 		void ChangeDiffuseTexture(const char* file_name);
 		std::shared_ptr<Texture> GetDiffuseTexture();
+		//ファイルとメモリのほかにインスタンスで変更できるようにもすること
+		//またインスタンスの入手もできるようにする事
 		void ChangeVS2DMemory(std::string data, int data_len, std::string entry, ShaderModel model, bool use_linkage);
 		void ChangeVS2DFile(std::string file_path, std::string entry, ShaderModel model, bool use_linkage);
 		void ChangePS2DMemory(std::string data, int data_len, std::string entry, ShaderModel model, bool use_linkage);

@@ -63,14 +63,18 @@ class MainWindow(QMainWindow):
 
     def AddMenu(self,menu_name):
         if menu_name in self.menuEnum:
-            return
-        self.menuEnum[menu_name] = 1
+            return self.menuEnum[menu_name]
         menu = QtWidgets.QMenu(self.ui.menubar)
+        self.menuEnum[menu_name] = menu
         menu.setObjectName(menu_name)
         _translate = QtCore.QCoreApplication.translate
         menu.setTitle(_translate("MainWindow", menu_name))
         return menu
 
+    #その名前のメニューが有り無しのBooleanを返す
+    def FindMenu(self,name):
+        return name in self.menuEnum
+        
     def GetMenuEnum(self):
         return self.menuEnum
 

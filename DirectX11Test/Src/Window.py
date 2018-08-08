@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\Users\2160149\Desktop\PyQt5\DirectX11Test\Window.ui'
+# Form implementation generated from reading ui file 'C:\Users\2160149\Desktop\PyQt5\DirectX11Test\Src\Window.ui'
 #
 # Created by: PyQt5 UI code generator 5.10.1
 #
@@ -16,22 +16,22 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
         self.gridLayout.setObjectName("gridLayout")
-        self.python_editor = QtWidgets.QLineEdit(self.centralwidget)
-        self.python_editor.setObjectName("python_editor")
-        self.gridLayout.addWidget(self.python_editor, 1, 1, 1, 1)
         self.directX11Widget = DirectXWidget(self.centralwidget)
         self.directX11Widget.setObjectName("directX11Widget")
         self.gridLayout.addWidget(self.directX11Widget, 0, 0, 1, 6)
-        self.output_label = QtWidgets.QLabel(self.centralwidget)
-        self.output_label.setObjectName("output_label")
-        self.gridLayout.addWidget(self.output_label, 1, 4, 1, 1)
+        self.execute_button = QtWidgets.QPushButton(self.centralwidget)
+        self.execute_button.setObjectName("execute_button")
+        self.gridLayout.addWidget(self.execute_button, 1, 3, 1, 1)
         self.lineEdit_2 = QtWidgets.QLineEdit(self.centralwidget)
         self.lineEdit_2.setReadOnly(True)
         self.lineEdit_2.setObjectName("lineEdit_2")
         self.gridLayout.addWidget(self.lineEdit_2, 1, 5, 1, 1)
-        self.execute_button = QtWidgets.QPushButton(self.centralwidget)
-        self.execute_button.setObjectName("execute_button")
-        self.gridLayout.addWidget(self.execute_button, 1, 3, 1, 1)
+        self.output_label = QtWidgets.QLabel(self.centralwidget)
+        self.output_label.setObjectName("output_label")
+        self.gridLayout.addWidget(self.output_label, 1, 4, 1, 1)
+        self.python_editor = QtWidgets.QLineEdit(self.centralwidget)
+        self.python_editor.setObjectName("python_editor")
+        self.gridLayout.addWidget(self.python_editor, 1, 1, 1, 1)
         self.python_button = PythonEditorTrigger(self.centralwidget)
         self.python_button.setObjectName("python_button")
         self.gridLayout.addWidget(self.python_button, 1, 0, 1, 1)
@@ -56,8 +56,8 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
-        self.output_label.setText(_translate("MainWindow", "output"))
         self.execute_button.setText(_translate("MainWindow", "Execute"))
+        self.output_label.setText(_translate("MainWindow", "output"))
         self.python_button.setText(_translate("MainWindow", "Python"))
         self.menuScript.setTitle(_translate("MainWindow", "&Script"))
         self.actionScriptManager.setText(_translate("MainWindow", "&ScriptManagerを起動"))
