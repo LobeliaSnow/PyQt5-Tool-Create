@@ -287,10 +287,10 @@ PYBIND11_MODULE(DirectX11, m) {
 	//py::class_<Polygon3DRenderer, VertexBuffer>(m, "Polygon3DRenderer")
 	//	.def(py::init<int, int>())
 	//	.def("Render", &Polygon3DRenderer::Render)
+	py::class_<DirectX::XMMATRIX>(m, "Matrix");
 
 	py::class_<Error>(m, "Error")
 		.def_static("ErrorBox", &Error::ErrorBox);
-
 	//シェーダーのヘッダー情報
 	m.attr("constantBufferInfo") = py::cast(constantBufferInfo);
 

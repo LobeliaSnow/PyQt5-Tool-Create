@@ -207,7 +207,9 @@ namespace Lobelia {
 
 	RenderTarget::RenderTarget(int x, int y, TextureFormat format, const RTSampleDesc& sample_desc, int array_count) {
 		texture = std::make_shared<Texture>(x, y, format, D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE, sample_desc, ACCESS_FLAG::DEFAULT, CPU_ACCESS_FLAG::NONE, array_count);
+		depth = std::make_shared<Texture>(x, y, TextureFormat::D24_UNORM_S8_UINT, D3D11_BIND_DEPTH_STENCIL, sample_desc, ACCESS_FLAG::DEFAULT, CPU_ACCESS_FLAG::NONE, array_count);
 		CreateRenderTarget(x, y, sample_desc, array_count);
+		CreateDepthView();
 	}
 	RenderTarget::RenderTarget(const ComPtr<ID3D11Texture2D>& texture) {
 		this->texture = std::make_shared<Texture>(texture);
@@ -217,10 +219,13 @@ namespace Lobelia {
 		sample_desc.count = desc.SampleDesc.Count;
 		sample_desc.quality = desc.SampleDesc.Quality;
 		CreateRenderTarget(desc.Width, desc.Height, sample_desc, 1);
+		depth = std::make_shared<Texture>(desc.Width, desc.Height, TextureFormat::D24_UNORM_S8_UINT, D3D11_BIND_DEPTH_STENCIL, sample_desc, ACCESS_FLAG::DEFAULT, CPU_ACCESS_FLAG::NONE, 1);
+		CreateDepthView();
 	}
 	void RenderTarget::Clear(int a, int r, int g, int b) {
 		float clearColor[4] = { static_cast<float>(r) / 255.0f,static_cast<float>(g) / 255.0f,static_cast<float>(b) / 255.0f,static_cast<float>(a) / 255.0f };
 		Device::GetContext()->ClearRenderTargetView(renderTarget.Get(), clearColor);
+		Device::GetContext()->ClearDepthStencilView(depthView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 0.0f, 0);
 	}
 	void RenderTarget::Activate() {
 		Device::GetContext()->OMSetRenderTargets(1, renderTarget.GetAddressOf(), depthView.Get());
@@ -493,13 +498,12 @@ namespace Lobelia {
 			desc.BackFace.StencilPassOp = static_cast<D3D11_STENCIL_OP>(sdesc.back.pass);
 			desc.BackFace.StencilFunc = static_cast<D3D11_COMPARISON_FUNC>(sdesc.back.testFunc);
 		}
-		SettingPreset(&desc, static_cast<int>(depth_stencil));
+		SettingPreset(&desc, depth_stencil);
 		hr = Device::Get()->CreateDepthStencilState(&desc, state.GetAddressOf());
 		if (FAILED(hr))Error::Message(ErrorCode::DXE00017);
 	}
-	void DepthStencilState::SettingPreset(D3D11_DEPTH_STENCIL_DESC* desc, int preset)const {
-		DepthPreset p = static_cast<DepthPreset>(preset);
-		switch (p) {
+	void DepthStencilState::SettingPreset(D3D11_DEPTH_STENCIL_DESC* desc, DepthPreset preset)const {
+		switch (preset) {
 		default:
 		case DepthPreset::NEVER:					desc->DepthFunc = D3D11_COMPARISON_NEVER;					break;
 		case DepthPreset::LESS:						desc->DepthFunc = D3D11_COMPARISON_LESS;						break;
@@ -898,8 +902,8 @@ namespace Lobelia {
 	void Material::CreateDefautRenderState() {
 		blend = std::make_shared<BlendState>(BlendPreset::COPY, true, false);
 		sampler = std::make_shared<SamplerState>(SamplerPreset::ANISOTROPIC, 16);
-		rasterizer = std::make_shared<RasterizerState>(RasterizerPreset::NONE);
-		depthStencil = std::make_shared<DepthStencilState>(DepthPreset::ALWAYS, false, StencilDesc(), false);
+		rasterizer = std::make_shared<RasterizerState>(RasterizerPreset::BACK);
+		depthStencil = std::make_shared<DepthStencilState>(DepthPreset::ALWAYS, true, StencilDesc(), false);
 	}
 	//現状構想は、プログラマブルにできる関数を用意してそこにセマンティック通りに送り付ける
 	//2Dも3Dもストリームに流れる情報量は同じにすることで、同じシェーダーを使えるのではないかという目論見
@@ -1006,25 +1010,25 @@ namespace Lobelia {
 		constantBuffer = std::make_unique<ConstantBuffer>(0, sizeof(CBData), static_cast<int>(ShaderStageList::VS) | static_cast<int>(ShaderStageList::DS) | static_cast<int>(ShaderStageList::GS));
 		aspect = static_cast<float>(size_x) / static_cast<float>(size_y);
 	}
-	void Camera::SetPos(float x, float y, float z) { pos.x = x; pos.y = y; pos.z = z; }
-	void Camera::SetAt(float x, float y, float z) { at.x = x; at.y = y; at.z = z; }
-	void Camera::SetUp(float x, float y, float z) { up.x = x; up.y = y; up.z = z; }
+	void Camera::SetPos(float x, float y, float z) { pos.x = x; pos.y = y; pos.z = z; pos.w = 1.0f; }
+	void Camera::SetAt(float x, float y, float z) { at.x = x; at.y = y; at.z = z; at.w = 1.0f; }
+	void Camera::SetUp(float x, float y, float z) { up.x = x; up.y = y; up.z = z; up.w = 1.0f; }
 	void Camera::Activate() {
 		CBData data = {};
-		data.projection = CreateProjection(fov, aspect, nearZ, farZ);
-		data.view = CreateView(pos, at, up);
+		data.projection = DirectX::XMMatrixTranspose(CreateProjection(fov, aspect, nearZ, farZ));
+		data.view = DirectX::XMMatrixTranspose(CreateView(pos, at, up));
 		constantBuffer->Activate(&data);
 	}
 	DirectX::XMMATRIX Camera::CreateProjection(float fov_rad, float aspect, float near_z, float far_z) {
 		DirectX::XMMATRIX projection = DirectX::XMMatrixPerspectiveFovLH(fov_rad, aspect, near_z, far_z);
-		return DirectX::XMMatrixTranspose(projection);
+		return projection;
 	}
 	DirectX::XMMATRIX Camera::CreateView(const DirectX::XMFLOAT4& pos, const DirectX::XMFLOAT4& at, const DirectX::XMFLOAT4&up) {
 		DirectX::XMVECTOR eyePos = DirectX::XMLoadFloat4(&pos);
 		DirectX::XMVECTOR eyeAt = DirectX::XMLoadFloat4(&at);
 		DirectX::XMVECTOR eyeUp = DirectX::XMLoadFloat4(&up);
 		DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(eyePos, eyeAt, eyeUp);
-		return DirectX::XMMatrixTranspose(view);
+		return view;
 	}
 
 	//----------------------------------------End Viewport------------------------------------------
@@ -1096,7 +1100,6 @@ namespace Lobelia {
 		world *= rotation;
 		//ここは少し審議が必要
 		world *= translate;
-		//↑位置xを反転させる(FBX問題解消)
 	}
 	DirectX::XMMATRIX Transformer::GetTranslateMatrix() { return translate; }
 	DirectX::XMMATRIX Transformer::CalcInverseTranslateMatrix() {

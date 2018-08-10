@@ -112,7 +112,7 @@ namespace Lobelia {
 		static void CreateEmptyTexture(std::shared_ptr<Texture>& texture);
 		static void LoadFile(const wchar_t* file_path, TextureExtension extension, DirectX::TexMetadata* meta, DirectX::ScratchImage& image);
 	};
-
+	//TODO : デプスステンシルはクラス化すること
 	class RenderTarget {
 	public:
 		//Python用
@@ -230,7 +230,7 @@ namespace Lobelia {
 		//Python用
 		void Set();
 	private:
-		void SettingPreset(D3D11_DEPTH_STENCIL_DESC* desc, int preset)const;
+		void SettingPreset(D3D11_DEPTH_STENCIL_DESC* desc, DepthPreset preset)const;
 	private:
 		ComPtr<ID3D11DepthStencilState> state;
 	};
@@ -486,11 +486,6 @@ namespace Lobelia {
 		void ChangeVS3DFile(std::string file_path, std::string entry, ShaderModel model, bool use_linkage);
 		void ChangePS3DMemory(std::string data, int data_len, std::string entry, ShaderModel model, bool use_linkage);
 		void ChangePS3DFile(std::string file_path, std::string entry, ShaderModel model, bool use_linkage);
-
-		//void ChangeBlendState();
-		//void ChangeSamplerState();
-		//void ChangeRasterizerState();
-		//void ChangeBlendState();
 	private:
 		//デフォルトを作成
 		void CreateEmptyMaterial();
@@ -639,8 +634,6 @@ namespace Lobelia {
 		//Python用
 		void Render(int render_count, PrimitiveTopology topology);
 		void RenderIndexed(int render_count, PrimitiveTopology topology);
-	private:
-		Transformer transformer;
 	private:
 		const int STRUCT_SIZE;
 		const int VERTEX_COUNT_MAX;
