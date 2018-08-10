@@ -1,0 +1,1 @@
+pyinstaller Main.py --noconsole -p "C:\Python36\Lib\site-packages\PyQt5\Qt\bin"
