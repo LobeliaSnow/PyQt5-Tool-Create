@@ -225,7 +225,7 @@ namespace Lobelia {
 	void RenderTarget::Clear(int a, int r, int g, int b) {
 		float clearColor[4] = { static_cast<float>(r) / 255.0f,static_cast<float>(g) / 255.0f,static_cast<float>(b) / 255.0f,static_cast<float>(a) / 255.0f };
 		Device::GetContext()->ClearRenderTargetView(renderTarget.Get(), clearColor);
-		Device::GetContext()->ClearDepthStencilView(depthView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 0.0f, 0);
+		Device::GetContext()->ClearDepthStencilView(depthView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	}
 	void RenderTarget::Activate() {
 		Device::GetContext()->OMSetRenderTargets(1, renderTarget.GetAddressOf(), depthView.Get());
