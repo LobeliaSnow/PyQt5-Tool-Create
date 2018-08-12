@@ -498,7 +498,7 @@ namespace Lobelia {
 			desc.BackFace.StencilPassOp = static_cast<D3D11_STENCIL_OP>(sdesc.back.pass);
 			desc.BackFace.StencilFunc = static_cast<D3D11_COMPARISON_FUNC>(sdesc.back.testFunc);
 		}
-		SettingPreset(&desc, depth_stencil);
+		//SettingPreset(&desc, depth_stencil);
 		hr = Device::Get()->CreateDepthStencilState(&desc, state.GetAddressOf());
 		if (FAILED(hr))Error::Message(ErrorCode::DXE00017);
 	}

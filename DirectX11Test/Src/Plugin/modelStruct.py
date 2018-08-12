@@ -115,9 +115,20 @@ class GLTFRenderer(directxwidget.RenderObject):
         self.material.ChangeVS3DMemory(code,length,"SimpleVS",DirectX11.ShaderModel._4_0,False)
         self.material.ChangePS3DMemory(code,length,"SimplePS",DirectX11.ShaderModel._4_0,False)
         self.transform = DirectX11.Transformer()
+        self.transform.Scalling(0.1)
         self.constantBuffer = DirectX11.ConstantBuffer(1,64,int(DirectX11.ShaderStageList.VS))
         self.rad = 0.0
-
+        ####テスト用ステート####
+        self.testRasterizer = DirectX11.RasterizerState(DirectX11.RasterizerPreset.BACK,False)
+        self.testRasterizerWire = DirectX11.RasterizerState(DirectX11.RasterizerPreset.BACK,True)
+        stencilDesc = DirectX11.StencilDesc()
+        self.testDepthTrue = DirectX11.DepthStencilState(DirectX11.DepthPreset.ALWAYS,True,stencilDesc,False)
+        self.testDepthFalse = DirectX11.DepthStencilState(DirectX11.DepthPreset.ALWAYS,False,stencilDesc,False)
+        self.testBlend = DirectX11.BlendState(DirectX11.BlendPreset.COPY,False,False)
+        self.testBlendTrue = DirectX11.BlendState(DirectX11.BlendPreset.COPY,True,False)
+        self.testBlendCoverage = DirectX11.BlendState(DirectX11.BlendPreset.COPY,True,True)
+        #########################
+        
     def SetIndexBuffer(self,indices):
         self.indexBuffer.Begin()
         self.indexBuffer.Set(0,indices)
@@ -141,6 +152,11 @@ class GLTFRenderer(directxwidget.RenderObject):
     def Render(self):
         self.material.ActivateState()
         self.material.ActivateShader3D()
+        ####テスト用ステート####
+        # self.testRasterizer.Set()
+        # self.testDepthTrue.Set()
+        # self.testBlendCoverage.Set()
+        #########################
         self.indexBuffer.Activate(0)
         self.rad += 0.01
         self.transform.RotationYAxis(self.rad)

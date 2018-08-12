@@ -23,7 +23,7 @@ class DirectXWidget(QOpenGLWidget):
         self.swapChain = DirectX11.SwapChain(self.winId().ascapsule(), x, y, sampleDesc)
         self.viewport = DirectX11.Viewport(0,0,x, y)
         self.camera = DirectX11.Camera(x,y,3.14/4.0,1.0,1000.0)
-        self.camera.SetPos(300,300,300)
+        self.camera.SetPos(30,30,30)
         self.camera.SetAt(0,0,0)
         self.camera.SetUp(0,1,0)
         # self.renderer = DirectX11.Polygon2DRenderer(8,8)
