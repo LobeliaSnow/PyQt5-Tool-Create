@@ -7,12 +7,14 @@ import random
 import numpy
 import pyautogui
 
-class RenderObject(object):
+class DirectXObject(object):
     def Render(self):
+        pass
+    def Update(self):
         pass
 
 class DirectXWidget(QOpenGLWidget):
-    renderList = []
+    objectList = []
     def __init__(self, parent = None):
         super(DirectXWidget, self).__init__(parent)
         sampleDesc = DirectX11.RTSampleDesc()
@@ -46,12 +48,13 @@ class DirectXWidget(QOpenGLWidget):
         self.viewport.Activate()
         self.camera.Activate()
         # self.renderer.Render(self.renderCount,self.renderTopology)
-        for render in DirectXWidget.renderList:
+        for render in DirectXWidget.objectList:
             render.Render()
         self.swapChain.Present(1)
         
     def Update(self):
-        pass
+        for update in DirectXWidget.objectList:
+            update.Update()
         
     #タイマーイベントで定期的に描画内容更新
     #http://melpystudio.blog82.fc2.com/blog-entry-153.html?sp

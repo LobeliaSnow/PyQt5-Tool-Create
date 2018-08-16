@@ -62,6 +62,7 @@ def ParseJson(jdict):
 #     return items
 
 class JsonViewerWidget(QWidget):
+    windowMenu = None
     def __init__(self, parent = None):
         super(JsonViewerWidget, self).__init__(parent)
         self.ui = Plugin.Module.jsonViewerWidget.Ui_testWidget()
@@ -74,15 +75,15 @@ class JsonViewerWidget(QWidget):
         # items = ParseJson(jdict)
         # self.ui.treeWidget.addTopLevelItems(items)
         #この先Qt初期化
-        if parent.FindMenu("&Window") == None:
+        if JsonViewerWidget.windowMenu != None:
             return
-        menu = parent.AddMenu("&Window")
+        JsonViewerWidget.windowMenu = parent.AddMenu("&Window")
         _translate = QtCore.QCoreApplication.translate
         action = QtWidgets.QAction(parent)
         action.triggered.connect(self.Show)
         action.setText(_translate("MainWindow", "&Json Viewer"))
-        menu.addAction(action)
-        parent.ui.menubar.addAction(menu.menuAction())
+        JsonViewerWidget.windowMenu.addAction(action)
+        parent.ui.menubar.addAction(JsonViewerWidget.windowMenu.menuAction())
         parent.jsonViewer = self
         # directxwidget.DirectXWidget.renderList += [ScriptModule.DX2DObject()]
         
@@ -111,6 +112,8 @@ widget = None
 
 def Initialize(parent = None):
     try:
+        if JsonViewerWidget.windowMenu != None:
+            return
         widget = JsonViewerWidget(parent)
         widget.setWindowFlags(Qt.Window)        
     except:

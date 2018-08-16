@@ -7,6 +7,7 @@ import sys
 import os
 from PyQt5 import QtCore, QtGui, QtWidgets
 import ctypes
+import ScriptModule
 #コンスタントバッファの値でif文が書かれて、全スレッドで確定するならばif文は最適化されるかも
 
 #文字列に対しての数を割り振り
@@ -102,11 +103,12 @@ shader = DirectX11.constantBufferInfo + \
     "   return diffuse;\n"\
 	"}\n"
     
-class GLTFRenderer(directxwidget.RenderObject):
+class ModelRenderer(directxwidget.DirectXObject):
+    structSize = 32
     def __init__(self):
-        super(GLTFRenderer,self).__init__()
+        super(ModelRenderer,self).__init__()
         # self.renderer = DirectX11.PolygonRenderer(12,15000)
-        self.renderer = DirectX11.PolygonRenderer(32,15000)
+        self.renderer = DirectX11.PolygonRenderer(ModelRenderer.structSize,15000)
         self.indexBuffer = DirectX11.IndexBuffer(15000)
         self.count = 0
         self.material = DirectX11.Material("Simple")
@@ -118,16 +120,6 @@ class GLTFRenderer(directxwidget.RenderObject):
         self.transform.Scalling(0.1)
         self.constantBuffer = DirectX11.ConstantBuffer(1,64,int(DirectX11.ShaderStageList.VS))
         self.rad = 0.0
-        ####テスト用ステート####
-        self.testRasterizer = DirectX11.RasterizerState(DirectX11.RasterizerPreset.BACK,False)
-        self.testRasterizerWire = DirectX11.RasterizerState(DirectX11.RasterizerPreset.BACK,True)
-        stencilDesc = DirectX11.StencilDesc()
-        self.testDepthTrue = DirectX11.DepthStencilState(DirectX11.DepthPreset.ALWAYS,True,stencilDesc,False)
-        self.testDepthFalse = DirectX11.DepthStencilState(DirectX11.DepthPreset.ALWAYS,False,stencilDesc,False)
-        self.testBlend = DirectX11.BlendState(DirectX11.BlendPreset.COPY,False,False)
-        self.testBlendTrue = DirectX11.BlendState(DirectX11.BlendPreset.COPY,True,False)
-        self.testBlendCoverage = DirectX11.BlendState(DirectX11.BlendPreset.COPY,True,True)
-        #########################
         
     def SetIndexBuffer(self,indices):
         self.indexBuffer.Begin()
@@ -165,61 +157,107 @@ class GLTFRenderer(directxwidget.RenderObject):
         self.constantBuffer.Activate(world)
         self.renderer.RenderIndexed(int(self.count),DirectX11.PrimitiveTopology.TRIANGLE_LIST)
 
+class ModelLoader(directxwidget.DirectXObject):
+    windowMenu = None
+    def __init__(self,parent):
+        # super(ModelLoader, self).__init__(parent)
+        self.renderer = ModelRenderer()
+        #読み込むファイルの相対パスが入る
+        self.relativePath = ""
+        self.parent = parent
+    #バイナリ情報を読み込んで返す
+    def LoadBinary(self,header):
+        data = []
+        #メッシュ情報のバイナリデータが入ってる
+        for accessor in header["accessors"]:
+            viewIndex = accessor["bufferView"]
+            bufferView = header["bufferViews"][viewIndex]
+            bufferIndex = bufferView["buffer"]
+            #要修正 同じファイルをオープンし続けるため無駄が発生
+            fileName = self.relativePath + header["buffers"][bufferIndex]["uri"]
+            with open(fileName, "rb") as fileData:
+                buffer = fileData.read()
+                variableFormatSingle = ParseVariableFormatStringToAccessor(accessor)
+                # stride = VariableFormatDataLength(variableFormatSingle)
+                # loadLength = (bufferView["byteLength"] / stride)
+                # variableFormat = variableFormatSingle * int(loadLength)
+                variableFormat = variableFormatSingle * accessor["count"]
+                offset = bufferView["byteOffset"] + accessor["byteOffset"]
+                data += [struct.unpack_from(variableFormat,buffer,offset)]
+        return data
 
+    #バイナリデータと、ヘッダーから辞書を作成
+    def CreateDictionary(self,header,data):
+        modelDict = {}
+        #ディクショナリ作成
+        for mesh in header["meshes"]:
+            primitives = mesh["primitives"]
+            for primitive in primitives:
+                modelDict["indices"] = data[primitive["indices"]]
+                for attribute in primitive["attributes"]:
+                    modelDict[attribute] = data[primitive["attributes"][attribute]]
+        return modelDict
+        
+    #辞書データからレンダラの情報を構築する
+    def BuildRenderer(self,model_dict):
+        self.renderer.SetIndexBuffer(model_dict["indices"])
+        posLength = len(model_dict["POSITION"]) / 3
+        indLength = len(model_dict["indices"])
+        self.renderer.Begin()
+        for i in range(int(posLength)):
+            vert = [model_dict["POSITION"][i * 3 + 0],model_dict["POSITION"][i * 3 + 1],model_dict["POSITION"][i * 3 + 2]]
+            vert += [model_dict["NORMAL"][i * 3 + 0],model_dict["NORMAL"][i * 3 + 1],model_dict["NORMAL"][i * 3 + 2]]
+            vert += [model_dict["TEXCOORD_0"][i * 2 + 0],model_dict["TEXCOORD_0"][i * 2 + 1]]
+            self.renderer.SetVertices(i * ModelRenderer.structSize, vert)
+        self.renderer.End()
+        self.renderer.SetCount(indLength)
+        self.renderer.SetDiffuseTexture("Plugin/DuckCM.png")
+    #glTFロード用関数
+    def Load(self,file_path):
+        modelFile = open(file_path, "r")
+        #Jsonの読み込み
+        modelHeader = json.load(modelFile)
+        #相対パスを取得
+        self.relativePath = os.path.normpath(os.path.join(os.path.abspath(file_path),'../')) + "/"
+        #データ保存用
+        data = self.LoadBinary(modelHeader)
+        #頂点情報などの辞書データ作成
+        modelDict = self.CreateDictionary(modelHeader,data)
+        self.BuildRenderer(modelDict)
+        #JsonViewerがプラグインとして読み込まれていた場合は
+        #ディクショナリをそのビュワーに登録
+        try:
+            self.parent.jsonViewer.OpenJsonDict(modelHeader)
+        except NameError:
+            pass
+    def RegisterMenuAction(self,parent):
+        action = QtWidgets.QAction(parent)
+        action.setObjectName("Load glTF")
+        ModelLoader.windowMenu = parent.AddMenu("&File")
+        _translate = QtCore.QCoreApplication.translate
+        action.setText(_translate("MainWindow", "&Load glTF"))
+        action.triggered.connect(self.OpenFile)
+        ModelLoader.windowMenu.addAction(action)
+        parent.ui.menubar.addAction(ModelLoader.windowMenu.menuAction())
+
+    def OpenFile(self):
+        filePath = ScriptModule.OpenFileDialog(self.parent,"glTFを読み込み","glTF(*gltf *glTF *GLTF);;全ての形式(*.*)")
+        if filePath[0] != "":
+            self.Load(filePath[0])
+
+    def Render(self):
+        self.renderer.Render()
+        
 #glTFの情報読みます
 #まだまだがばがば、ほしい情報はあまりとれていない
 #現状はインデックスバッファと、アトリビュート(頂点や法線)のみ
-#後にクラス化
 def Initialize(parent):
-    #現在テスト用
-    modelFile = open("Plugin/testModel.glTF", "r")
-    modelHeader = json.load(modelFile)
-    # print(modelHeader)
-    data = []
-    #メッシュ情報のバイナリデータが入ってる
-    for accessor in modelHeader["accessors"]:
-        viewIndex = accessor["bufferView"]
-        bufferView = modelHeader["bufferViews"][viewIndex]
-        bufferIndex = bufferView["buffer"]
-        #要修正 同じファイルをオープンし続けるため無駄が発生
-        fileName = modelHeader["buffers"][bufferIndex]["uri"]
-        with open("Plugin/" + fileName, "rb") as fileData:
-            buffer = fileData.read()
-            variableFormatSingle = ParseVariableFormatStringToAccessor(accessor)
-            # stride = VariableFormatDataLength(variableFormatSingle)
-            # loadLength = (bufferView["byteLength"] / stride)
-            # variableFormat = variableFormatSingle * int(loadLength)
-            variableFormat = variableFormatSingle * accessor["count"]
-            offset = bufferView["byteOffset"] + accessor["byteOffset"]
-            data += [struct.unpack_from(variableFormat,buffer,offset)]
-    modelDict = {}
-    #ディクショナリ作成
-    for mesh in modelHeader["meshes"]:
-        primitives = mesh["primitives"]
-        for primitive in primitives:
-            modelDict["indices"] = data[primitive["indices"]]
-            for attribute in primitive["attributes"]:
-                modelDict[attribute] = data[primitive["attributes"][attribute]]
-    renderer = GLTFRenderer()
-    renderer.SetIndexBuffer(modelDict["indices"])
-    posLength = len(modelDict["POSITION"]) / 3
-    indLength = len(modelDict["indices"])
-    renderer.Begin()
-    for i in range(int(posLength)):
-        vert = [modelDict["POSITION"][i * 3 + 0],modelDict["POSITION"][i * 3 + 1],modelDict["POSITION"][i * 3 + 2]]
-        vert += [modelDict["NORMAL"][i * 3 + 0],modelDict["NORMAL"][i * 3 + 1],modelDict["NORMAL"][i * 3 + 2]]
-        vert += [modelDict["TEXCOORD_0"][i * 2 + 0],modelDict["TEXCOORD_0"][i * 2 + 1]]
-        renderer.SetVertices(i * 32, vert)
-    renderer.End()
-    renderer.SetCount(indLength)
-    renderer.SetDiffuseTexture("Plugin/DuckCM.png")
-    directxwidget.DirectXWidget.renderList += [renderer]
-    #JsonViewerがプラグインとして読み込まれていた場合は
-    #ディクショナリをそのビュワーに登録
-    try:
-        parent.jsonViewer.OpenJsonDict(modelDict)
-    except NameError:
-        pass
+    if ModelLoader.windowMenu != None:
+        return        
+    loader = ModelLoader(parent)
+    loader.RegisterMenuAction(parent)
+    # loader.Load("Plugin/testModel.glTF")
+    directxwidget.DirectXWidget.objectList += [loader]
 
 if __name__ == '__main__':
     Initialize(None)

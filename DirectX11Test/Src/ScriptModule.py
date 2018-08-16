@@ -72,7 +72,7 @@ class SpriteRenderer:
         self.renderer.End()
         self.renderer.Render(4,DirectX11.PrimitiveTopology.TRIANGLE_STRIP)
     
-class DX2DObject(directxwidget.RenderObject,object):
+class DX2DObject(directxwidget.DirectXObject,object):
     def __init__(self,file_path):
         super(DX2DObject,self).__init__()
         self.renderer = SpriteRenderer()
