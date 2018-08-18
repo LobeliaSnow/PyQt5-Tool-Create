@@ -7,49 +7,42 @@ if __name__ == "__main__":
 else:#スクリプトとして取り込まれたとき
     from Plugin.Module.GltfHelper import *
 
+#公式リファレンス
 #https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
 
-#ディクショナリから値取り出すヘルパーがあってもいいかもと思ったけど
-#実行速度の面でどうなんだろう(Pythonの仕様的に気になる)
+#ヘルパー
+#ディクショナリの中にそのキーがあればその値を返し、なければNoneを返す
+def DictInValue(dictionary,value_name):
+    if value_name in dictionary:
+        return dictionary[value_name]
+    return None
 
 class Gltf2_0Node:
     def __init__(self,tag):
         self.tag = tag
-#if~else:self.xxx = None辺りもっといい書き方がある気がする
 class Gltf2_0MeshNode(Gltf2_0Node):
     def __init__(self,node_info):
         super(Gltf2_0MeshNode,self).__init__("mesh")
         self.meshIndex = node_info["mesh"]
         #アニメーションの情報をこのノードが持っていなかったらNone
-        if "skin" in node_info:
-            self.skinIndex = node_info["skin"]
-        else:
-            self.skinIndex = None
+        self.skinIndex = DictInValue(node_info,"skin")
 class Gltf2_0TransformNode(Gltf2_0Node):
     def __init__(self,node_info):
         super(Gltf2_0TransformNode,self).__init__("transform")
         #親子関係周り
-        if "children" in node_info:
-            self.children = node_info["children"]
-        else:
-            self.children = None
+        self.children = DictInValue(node_info,"children")
+        self.matrix = DictInValue(node_info,"matrix")
         #ノードがローカル変換行列を持っているかどうか
-        if "matrix" in node_info:
-            self.matrix = node_info["matrix"]
-        else:
-            self.matrix = None
-            if "translation" in node_info:
-                self.translation = node_info["translation"]
-            else:
+        if self.matrix == None:
+            self.translation = DictInValue(node_info,"translation")
+            if self.translation == None:
                 self.translation = [0.0,0.0,0.0]
             #クォータニオン
-            if "rotation" in node_info:
-                self.rotation = node_info["rotation"]
-            else:
+            self.rotation = DictInValue(node_info,"rotation")
+            if self.rotation == None:
                 self.rotation = [0.0,0.0,0.0,1.0]
-            if "scale" in node_info:
-                self.scale = node_info["scale"]
-            else:
+            self.scale = DictInValue(node_info,"scale")
+            if self.scale == None:
                 self.scale = [1.0,1.0,1.0]
 #現状使わない
 # class Gltf2_0CameraNode(Gltf2_0Node):
@@ -62,14 +55,11 @@ class Gltf2_0Buffer:
         self.rawBuffer = open(file_path,"rb").read()
         self.byteLength = byte_length
         self.decodeData = {}
-    def Decode(self,offset,single_format,count):
-        self.decodeData[offset] = struct.unpack_from(single_format*count,self.rawBuffer,offset)
 
 class Gltf2_0MeshHeader:
     def __init__(self,mesh_info):
-        if "name" in mesh_info:
-            self.name = mesh_info["name"]
-        else:
+        self.name = DictInValue(mesh_info,"name")
+        if self.name == None:
             self.name = ""
         self.ParesePrimitives(mesh_info)
     def ParesePrimitives(self,mesh_info):
@@ -80,29 +70,23 @@ class Gltf2_0MeshHeader:
         else:
             self.topology = ModeConverteString(4)
         #インデックスバッファが存在してるかどうか
-        if "indices" in primitives: 
-            self.indices = primitives["indices"]
-        else:
-            self.indices = None
-        if "material" in mesh_info:
-            self.material = primitives["material"]
-        else:
+        self.indices = DictInValue(primitives,"indices")
+        self.material = DictInValue(primitives,"material")
+        if self.material == None:
             self.material = 0
         self.attributes = primitives["attributes"]
         #モーフデータ
-        if "targets" in primitives:
-            self.targets = primitives["targets"]
-        else:
-            self.targets = None
+        self.targets = DictInValue(primitives,"targets")
         #拡張機能系
-        if "extension" in primitives:
-            self.extension = primitives ["extension"]
-        else:
-            self.extension = None
-        if "extras" in primitives:
-            self.extras = primitives ["extras"]
-        else:
-            self.extras = None
+        self.extension = DictInValue(primitives,"extension")
+        self.extras = DictInValue(primitives,"extras")
+
+class gltf2_0BufferData:
+    def __init__(self,data,count,min_value,max_value):
+        self.data = data
+        self.count = count
+        self.min = min_value
+        self.max = max_value
 
 class Gltf2_0Loader:
     #外部用
@@ -121,6 +105,8 @@ class Gltf2_0Loader:
         self.LoadImages()
         #ここからガッツリ情報が読みだされる
         self.ParseScenes()
+        #ここでindices等の情報結びつけられたデータベースが手に入る
+        self.CreateDB()
         print("complete")
     #読み込まれたGLTFが何で作られたものかを返す
     #読み込まれていない場合はエラーとなる
@@ -153,9 +139,8 @@ class Gltf2_0Loader:
         #self.nodesに必要なノードデータがそろう
         self.ParseNodes()
         #デフォルトのシーンがどれか
-        if "scene" in self.header:
-            self.defaultNode = self.header["scene"]
-        else:
+        self.defaultNode = DictInValue(self.header,"scene")
+        if self.defaultNode == None:
             self.defaultNode = 0
         #メッシュのプリミティブ情報をパース
         self.ParseMeshes()        
@@ -184,7 +169,9 @@ class Gltf2_0Loader:
             self.meshHeaders += [Gltf2_0MeshHeader(mesh)]
 
     #bufferViews,accessorを利用して、バイナリデータのパース
+    #sparseに対応する必要あり
     def ParseBuffers(self):
+        self.data = []
         for accessor in self.header["accessors"]:
             #このデータブロックが1要素当たりどのような構成しているかをstructで読める形で返す
             singleFormat = ParseVariableFormatStringToAccessor(accessor)
@@ -197,10 +184,33 @@ class Gltf2_0Loader:
             #どの地点から読むか
             if "byteOffset" in accessor:
                 offset = accessor["byteOffset"]
-            self.buffers[bufferIndex].Decode(offset,singleFormat,accessor["count"])
-        for buffer in self.buffers:
-            print(buffer.decodeData)
+            offset += bufferView["byteOffset"]
+            count = accessor["count"]
+            bufferData = struct.unpack_from(singleFormat*count,self.buffers[bufferIndex].rawBuffer,offset)
+            self.data += [gltf2_0BufferData(bufferData,count,accessor["min"],accessor["max"])]
+    def CreateDB(self):
+        #インデックス
+        self.dataBase = []
+        #要素名
+        self.dataBaseDict = {}
+        for header in self.meshHeaders:
+            indicesPair = ("indices",self.data[header.indices])
+            self.dataBase += [indicesPair]
+            if "indices" in self.dataBaseDict:
+                self.dataBaseDict["indices"] += [indicesPair[1]]
+            else:
+                self.dataBaseDict["indices"] = [indicesPair[1]]
+            for attribute in header.attributes:
+                pair = (attribute,self.data[header.attributes[attribute]])
+                if attribute in self.dataBaseDict:
+                    self.dataBaseDict[attribute] += [pair[1]]
+                else:
+                    self.dataBaseDict[attribute] = [pair[1]]
+                self.dataBase += [pair]
+            pass
 
+#TODO : レンダラ構築
+            
 def Initialize(parent):
     loader = Gltf2_0Loader()
     loader.Load("testModel.gltf")
