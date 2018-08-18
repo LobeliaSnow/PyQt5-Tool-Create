@@ -15,6 +15,7 @@ def ModeConverteString(mode):
     elif mode == 6:
         topology = "TRIANGLE_FAN"
     return topology
+    
 #文字列に対しての数を割り振り
 def ParseVariableCount(define):
     count = 0

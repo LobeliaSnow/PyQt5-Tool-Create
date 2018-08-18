@@ -1,5 +1,6 @@
 import json
 import os
+import struct
 #開発時
 if __name__ == "__main__":
     from Module.GltfHelper import *
@@ -7,6 +8,9 @@ else:#スクリプトとして取り込まれたとき
     from Plugin.Module.GltfHelper import *
 
 #https://github.com/KhronosGroup/glTF/tree/master/specification/2.0#meshes
+
+#ディクショナリから値取り出すヘルパーがあってもいいかもと思ったけど
+#実行速度の面でどうなんだろう(Pythonの仕様的に気になる)
 
 class Gltf2_0Node:
     def __init__(self,tag):
@@ -57,6 +61,9 @@ class Gltf2_0Buffer:
         self.file_path = file_path
         self.rawBuffer = open(file_path,"rb").read()
         self.byteLength = byte_length
+        self.decodeData = {}
+    def Decode(self,offset,single_format,count):
+        self.decodeData[offset] = struct.unpack_from(single_format*count,self.rawBuffer,offset)
 
 class Gltf2_0MeshHeader:
     def __init__(self,mesh_info):
@@ -64,13 +71,39 @@ class Gltf2_0MeshHeader:
             self.name = mesh_info["name"]
         else:
             self.name = ""
+        self.ParesePrimitives(mesh_info)
+    def ParesePrimitives(self,mesh_info):
         #primitivesの要素を1と仮定
         primitives = mesh_info["primitives"][0]
         if "mode" in primitives:
             self.topology = ModeConverteString(primitives["mode"])
         else:
             self.topology = ModeConverteString(4)
-            
+        #インデックスバッファが存在してるかどうか
+        if "indices" in primitives: 
+            self.indices = primitives["indices"]
+        else:
+            self.indices = None
+        if "material" in mesh_info:
+            self.material = primitives["material"]
+        else:
+            self.material = 0
+        self.attributes = primitives["attributes"]
+        #モーフデータ
+        if "targets" in primitives:
+            self.targets = primitives["targets"]
+        else:
+            self.targets = None
+        #拡張機能系
+        if "extension" in primitives:
+            self.extension = primitives ["extension"]
+        else:
+            self.extension = None
+        if "extras" in primitives:
+            self.extras = primitives ["extras"]
+        else:
+            self.extras = None
+
 class Gltf2_0Loader:
     #外部用
     def __init__(self):
@@ -126,7 +159,8 @@ class Gltf2_0Loader:
             self.defaultNode = 0
         #メッシュのプリミティブ情報をパース
         self.ParseMeshes()        
-
+        #バイナリ情報をパース
+        self.ParseBuffers()
     #扱いやすい形式にノードをパースして変換
     def ParseNodes(self):
         self.nodes = []
@@ -148,6 +182,24 @@ class Gltf2_0Loader:
         self.meshHeaders = []
         for mesh in self.header["meshes"]:
             self.meshHeaders += [Gltf2_0MeshHeader(mesh)]
+
+    #bufferViews,accessorを利用して、バイナリデータのパース
+    def ParseBuffers(self):
+        for accessor in self.header["accessors"]:
+            #このデータブロックが1要素当たりどのような構成しているかをstructで読める形で返す
+            singleFormat = ParseVariableFormatStringToAccessor(accessor)
+            #どのブロックの情報を読むか
+            viewIndex = accessor["bufferView"]
+            bufferView = self.header["bufferViews"][viewIndex]
+            #どのファイルの情報を読むか
+            bufferIndex = bufferView["buffer"]
+            offset = 0
+            #どの地点から読むか
+            if "byteOffset" in accessor:
+                offset = accessor["byteOffset"]
+            self.buffers[bufferIndex].Decode(offset,singleFormat,accessor["count"])
+        for buffer in self.buffers:
+            print(buffer.decodeData)
 
 def Initialize(parent):
     loader = Gltf2_0Loader()
