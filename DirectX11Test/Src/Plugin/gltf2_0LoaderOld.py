@@ -81,7 +81,8 @@ class ModelLoader(directxwidget.DirectXObject):
             self.renderer.SetVertices(i * ModelRenderer.structSize, vert)
         self.renderer.End()
         self.renderer.SetCount(indLength)
-        self.renderer.SetDiffuseTexture("C:/Users/black/Desktop/PyQt5-Tool-Create/DirectX11Test/Src/Plugin/white.png")
+        # self.renderer.SetDiffuseTexture("C:/Users/black/Desktop/PyQt5-Tool-Create/DirectX11Test/Src/Plugin/white.png")
+        self.renderer.SetDiffuseTexture("Plugin/DuckCM.png")
     
     #glTFロード用関数
     def Load(self,file_path):

@@ -1,3 +1,20 @@
+def ModeConverteString(mode):
+    topology = ""
+    if mode == 0:
+        topology = "POINTS"
+    elif mode == 1:
+        topology = "LINES"
+    elif mode == 2:
+        topology = "LINE_LOOP"
+    elif mode == 3:
+        topology = "LINE_STRIP"
+    elif mode == 4:
+        topology = "TRIANGLES"
+    elif mode == 5:
+        topology = "TRIANGLE_STRIP"
+    elif mode == 6:
+        topology = "TRIANGLE_FAN"
+    return topology
 #文字列に対しての数を割り振り
 def ParseVariableCount(define):
     count = 0

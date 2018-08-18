@@ -72,7 +72,7 @@ class ModelRenderer(directxwidget.DirectXObject):
     def SetDiffuseTexture(self,file_path):
         self.material.ChangeDiffuseTexture(file_path)
      
-    def Render(self):
+    def Render(self,wire = False):
         if int(self.count) == 0:
             return
         self.material.ActivateState()
@@ -83,5 +83,6 @@ class ModelRenderer(directxwidget.DirectXObject):
         self.transform.CalcWorldMatrix()
         world = self.transform.GetWorldMatrixTranspose()
         self.constantBuffer.Activate(world)
-        self.testRasterizer.Set()
+        if wire:
+            self.testRasterizer.Set()
         self.renderer.RenderIndexed(int(self.count),DirectX11.PrimitiveTopology.TRIANGLE_LIST)
