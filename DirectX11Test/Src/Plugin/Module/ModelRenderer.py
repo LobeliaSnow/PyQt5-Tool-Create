@@ -48,8 +48,8 @@ class ModelRenderer(directxwidget.DirectXObject):
         self.material.ChangePS3DMemory(code,length,"SimplePS",DirectX11.ShaderModel._4_0,False)
         self.transform = DirectX11.Transformer()
         # self.transform.Scalling(0.1)
-        self.transform.Scalling(4.0)
-        self.transform.Scalling(40.0)
+        # self.transform.Scalling(4.0)
+        # self.transform.Scalling(90.0)
         self.constantBuffer = DirectX11.ConstantBuffer(1,64,int(DirectX11.ShaderStageList.VS))
         self.rad = 0.0
         self.testRasterizer = DirectX11.RasterizerState(DirectX11.RasterizerPreset.NONE,True)

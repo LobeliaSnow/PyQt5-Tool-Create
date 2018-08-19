@@ -138,9 +138,14 @@ namespace Lobelia {
 			hr = DirectX::LoadFromTGAFile(file_path, meta, image);
 			break;
 		case TextureExtension::NO_SUPPORT:
-		default:	Error::Message(ErrorCode::DXE01003);
+		default:
+			Error::Message(ErrorCode::DXE01003);
+			throw;
 		}
-		if (FAILED(hr))Error::Message(ErrorCode::DXE01004);
+		if (FAILED(hr)) {
+			Error::Message(ErrorCode::DXE01004);
+			throw;
+		}
 	}
 	std::shared_ptr<Texture> TextureManager::Load(const char* file_path, bool force) {
 		std::shared_ptr<Texture> texture;
@@ -151,7 +156,12 @@ namespace Lobelia {
 				return texture;
 			}
 			//からのテクスチャを作るか否か
-			if (strcmp(file_path, "") == 0 || FilePathControl::GetFilename(file_path) == ".")throw;
+			std::string fileName = FilePathControl::GetFilename(file_path);
+			if (strcmp(file_path, "") == 0 || fileName == "." || fileName == "") {
+				//読み込みや作成に失敗した場合
+				CreateEmptyTexture(texture);
+				return texture;
+			}
 			TextureExtension extension = JudgeExtension(file_path);
 			DirectX::TexMetadata meta = {};
 			DirectX::ScratchImage image = {};

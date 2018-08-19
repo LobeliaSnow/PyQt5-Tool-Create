@@ -111,9 +111,13 @@ class GLTF2_0BufferData:
 #texCoordの数字はTEXCOORD_<X>の部分のインデックス
 class GLTF2_0Material:
     def __init__(self,materials):
-        self.name = materials["name"]
+        self.name = DictInValue(materials,"name")
+        if self.name == None:
+            self.name = ""
         material = materials["pbrMetallicRoughness"]
         textureInfo = DictInValue(material,"baseColorTexture")
+        self.baseColorTextureIndex = None
+        self.baseColorTextureTexCoord = None
         if textureInfo != None:
             self.baseColorTextureIndex = DictInValue(textureInfo,"index")
             self.baseColorTextureTexCoord = DictInValue(textureInfo,"texCoord")

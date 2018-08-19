@@ -36,7 +36,11 @@ class ModelLoader(directxwidget.DirectXObject):
             for i in range(positions[meshCount].count):
                 pos = [positions[meshCount].data[i*3+0],positions[meshCount].data[i*3+1],positions[meshCount].data[i*3+2]]
                 normal = [normals[meshCount].data[i*3+0],normals[meshCount].data[i*3+1],normals[meshCount].data[i*3+2]]
-                texcoord = [texcoords[meshCount].data[i*2+0],texcoords[meshCount].data[i*2+1]]
+                texcoord = None
+                if texcoords != None:
+                    texcoord = [texcoords[meshCount].data[i*2+0],texcoords[meshCount].data[i*2+1]]
+                else:
+                    texcoord = [0.0,0.0]
                 ret += pos
                 ret += normal
                 ret += texcoord
@@ -51,9 +55,12 @@ class ModelLoader(directxwidget.DirectXObject):
             renderer.Begin()
             renderer.SetVertices(0,vertices)
             renderer.End()
-            self.loader.meshHeaders[i].material
-            textureIndex = self.loader.materials[self.loader.meshHeaders[i].material].baseColorTextureIndex
-            renderer.SetDiffuseTexture(self.loader.GetRelativePath() + self.loader.images[textureIndex].path)
+            materialIndex = self.loader.meshHeaders[i].material
+            textureIndex = self.loader.materials[materialIndex].baseColorTextureIndex
+            path = ""
+            if textureIndex != None:
+                path = self.loader.images[textureIndex].path
+            renderer.SetDiffuseTexture(self.loader.GetRelativePath() + path)
             renderer.SetCount(int(len(indices)))
             self.renderers += [renderer]
 
