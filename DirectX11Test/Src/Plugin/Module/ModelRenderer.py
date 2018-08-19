@@ -22,17 +22,20 @@ shader = DirectX11.constantBufferInfo + \
 	"	output.pos = mul(pos, world);\n"\
 	"	output.pos = mul(output.pos, view);\n"\
 	"	output.pos = mul(output.pos, projection);\n"\
-	"	output.normal = mul(input.normal,(float3x3)world);\n"\
+	"	output.normal = normalize(mul(input.normal,(float3x3)world));\n"\
 	"	output.uv = input.uv;\n"\
 	"	return output;\n"\
 	"}\n"\
     "float4 SimplePS(SIMPLE_PS_IN input) : SV_Target {\n"\
-    "   float3 lightDir = float3(1.0f,1.0f,1.0f);\n"\
+    "   float3 lightDir = normalize(float3(1.0f,1.0f,1.0f));\n"\
 	"	float4 diffuse = txDiffuse.Sample(samLinear, input.uv);\n"\
-    "   //diffuse.rgb *= (dot(lightDir,input.normal)+1.0f)*0.5f;\n"\
+    "   diffuse.rgb *= dot(lightDir,input.normal);\n"\
     "   return diffuse;\n"\
 	"}\n"
     
+#TODO : 機能強化
+#TODO : インスタンシング対応
+
 class ModelRenderer(directxwidget.DirectXObject):
     structSize = 32
     def __init__(self):
@@ -47,12 +50,12 @@ class ModelRenderer(directxwidget.DirectXObject):
         self.material.ChangeVS3DMemory(code,length,"SimpleVS",DirectX11.ShaderModel._4_0,False)
         self.material.ChangePS3DMemory(code,length,"SimplePS",DirectX11.ShaderModel._4_0,False)
         self.transform = DirectX11.Transformer()
-        # self.transform.Scalling(0.1)
         # self.transform.Scalling(4.0)
         # self.transform.Scalling(90.0)
         self.constantBuffer = DirectX11.ConstantBuffer(1,64,int(DirectX11.ShaderStageList.VS))
         self.rad = 0.0
-        self.testRasterizer = DirectX11.RasterizerState(DirectX11.RasterizerPreset.NONE,True)
+        self.rasterizer = DirectX11.RasterizerState(DirectX11.RasterizerPreset.FRONT,False)
+        self.wireRasterizer = DirectX11.RasterizerState(DirectX11.RasterizerPreset.FRONT,True)
     def SetIndexBuffer(self,indices):
         self.indexBuffer.Begin()
         self.indexBuffer.Set(0,indices)
@@ -72,7 +75,10 @@ class ModelRenderer(directxwidget.DirectXObject):
     
     def SetDiffuseTexture(self,file_path):
         self.material.ChangeDiffuseTexture(file_path)
-     
+    
+    def Scalling(self,scale):
+        self.transform.Scalling(scale)
+
     def Render(self,wire = False):
         if int(self.count) == 0:
             return
@@ -85,5 +91,7 @@ class ModelRenderer(directxwidget.DirectXObject):
         world = self.transform.GetWorldMatrixTranspose()
         self.constantBuffer.Activate(world)
         if wire:
-            self.testRasterizer.Set()
+            self.wireRasterizer.Set()
+        else:
+            self.rasterizer.Set()
         self.renderer.RenderIndexed(int(self.count),DirectX11.PrimitiveTopology.TRIANGLE_LIST)

@@ -52,6 +52,10 @@ class DirectXWidget(QOpenGLWidget):
             render.Render()
         self.swapChain.Present(1)
         
+    def CameraUpdate(self):
+        
+        pass
+        
     def Update(self):
         for update in DirectXWidget.objectList:
             update.Update()

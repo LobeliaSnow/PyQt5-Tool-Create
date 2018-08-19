@@ -1,24 +1,38 @@
 import directxwidget
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtCore import *
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
 from Plugin.Module.ModelRenderer import ModelRenderer
 from Plugin.Module.Gltf2_0Loader import *
+import Plugin.Module.GltfConsole
 import ScriptModule
 
-class ModelLoader(directxwidget.DirectXObject):
+class ModelLoader(directxwidget.DirectXObject,QtWidgets.QWidget):
     windowMenu = None
     def __init__(self,parent):
+        super(ModelLoader,self).__init__(parent)
+        self.ui = Plugin.Module.GltfConsole.Ui_GLTFConsole()
+        self.ui.setupUi(self)
         self.renderers = []
         self.loader = GLTF2_0Loader()
         self.parent = parent
+        self.ui.pushButton.clicked.connect(self.OpenFile)
+        self.setWindowFlags(Qt.Window)    
+        self.wire = False
+
     def RegisterMenuAction(self,parent):
         action = QtWidgets.QAction(parent)
-        action.setObjectName("Load glTF")
-        ModelLoader.windowMenu = parent.AddMenu("&File")
+        action.setObjectName("glTF")
+        ModelLoader.windowMenu = parent.AddMenu("&glTF")
         _translate = QtCore.QCoreApplication.translate
-        action.setText(_translate("MainWindow", "&Load glTF"))
-        action.triggered.connect(self.OpenFile)
+        action.setText(_translate("MainWindow", "&Open Console"))
+        action.triggered.connect(self.Show)
         ModelLoader.windowMenu.addAction(action)
         parent.ui.menubar.addAction(ModelLoader.windowMenu.menuAction())
+    def Show(self):
+        self.setWindowState(Qt.WindowActive)
+        self.show()
 
     def OpenFile(self):
         filePath = ScriptModule.OpenFileDialog(self.parent,"glTFを読み込み","glTF(*gltf *glTF *GLTF);;全ての形式(*.*)")
@@ -34,8 +48,8 @@ class ModelLoader(directxwidget.DirectXObject):
         ret = []
         for meshCount in range(len(positions)):
             for i in range(positions[meshCount].count):
-                pos = [positions[meshCount].data[i*3+0],positions[meshCount].data[i*3+1],positions[meshCount].data[i*3+2]]
-                normal = [normals[meshCount].data[i*3+0],normals[meshCount].data[i*3+1],normals[meshCount].data[i*3+2]]
+                pos = [-positions[meshCount].data[i*3+0],positions[meshCount].data[i*3+1],positions[meshCount].data[i*3+2]]
+                normal = [-normals[meshCount].data[i*3+0],normals[meshCount].data[i*3+1],normals[meshCount].data[i*3+2]]
                 texcoord = None
                 if texcoords != None:
                     texcoord = [texcoords[meshCount].data[i*2+0],texcoords[meshCount].data[i*2+1]]
@@ -63,10 +77,16 @@ class ModelLoader(directxwidget.DirectXObject):
             renderer.SetDiffuseTexture(self.loader.GetRelativePath() + path)
             renderer.SetCount(int(len(indices)))
             self.renderers += [renderer]
-
+    def Update(self):
+        if self.ui.checkBox.checkState() == Qt.Checked:
+            self.wire = True
+        else:
+            self.wire = False
+        for renderer in self.renderers:
+            renderer.Scalling(self.ui.doubleSpinBox.value())
     def Render(self):
         for renderer in self.renderers:
-            renderer.Render()
+            renderer.Render(self.wire)
 
 #glTFの情報読みます
 #まだまだがばがば、ほしい情報はあまりとれていない
