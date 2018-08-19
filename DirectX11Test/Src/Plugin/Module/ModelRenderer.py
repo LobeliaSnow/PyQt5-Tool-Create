@@ -29,7 +29,7 @@ shader = DirectX11.constantBufferInfo + \
     "float4 SimplePS(SIMPLE_PS_IN input) : SV_Target {\n"\
     "   float3 lightDir = float3(1.0f,1.0f,1.0f);\n"\
 	"	float4 diffuse = txDiffuse.Sample(samLinear, input.uv);\n"\
-    "   diffuse.rgb *= (dot(lightDir,input.normal)+1.0f)*0.5f;\n"\
+    "   //diffuse.rgb *= (dot(lightDir,input.normal)+1.0f)*0.5f;\n"\
     "   return diffuse;\n"\
 	"}\n"
     
@@ -47,8 +47,9 @@ class ModelRenderer(directxwidget.DirectXObject):
         self.material.ChangeVS3DMemory(code,length,"SimpleVS",DirectX11.ShaderModel._4_0,False)
         self.material.ChangePS3DMemory(code,length,"SimplePS",DirectX11.ShaderModel._4_0,False)
         self.transform = DirectX11.Transformer()
-        self.transform.Scalling(0.1)
-        # self.transform.Scalling(4.0)
+        # self.transform.Scalling(0.1)
+        self.transform.Scalling(4.0)
+        self.transform.Scalling(40.0)
         self.constantBuffer = DirectX11.ConstantBuffer(1,64,int(DirectX11.ShaderStageList.VS))
         self.rad = 0.0
         self.testRasterizer = DirectX11.RasterizerState(DirectX11.RasterizerPreset.NONE,True)

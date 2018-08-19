@@ -3,8 +3,8 @@ import os
 import struct
 #開発時
 if __name__ == "__main__":
-    from Module.GltfHelper import *
-else:#スクリプトとして取り込まれたとき
+    from GltfHelper import *
+else:#自分のツールにスクリプトとして取り込まれたとき(ルートディレクトリがかわるため)
     from Plugin.Module.GltfHelper import *
 
 #公式リファレンス
@@ -107,6 +107,52 @@ class GLTF2_0BufferData:
         self.min = min_value
         self.max = max_value
 
+#他にもいろいろ情報は持ってると思うけど、とりあえずこれだけ
+#texCoordの数字はTEXCOORD_<X>の部分のインデックス
+class GLTF2_0Material:
+    def __init__(self,materials):
+        self.name = materials["name"]
+        material = materials["pbrMetallicRoughness"]
+        textureInfo = DictInValue(material,"baseColorTexture")
+        if textureInfo != None:
+            self.baseColorTextureIndex = DictInValue(textureInfo,"index")
+            self.baseColorTextureTexCoord = DictInValue(textureInfo,"texCoord")
+            if self.baseColorTextureTexCoord == None:
+                self.baseColorTextureTexCoord = 0
+        self.baseColorFactor = DictInValue(material,"baseColorFactor")
+        if self.baseColorFactor == None:
+            self.baseColorFactor = [1.0,1.0,1.0,1.0]
+        #物理ベースでのエミッシブファクターを使用押したことがないのでこのデフォルト値はでたらめな可能性がある
+        # self.emmisiveFactor = DictInValue(materials,"emmisiveFactor")
+        # if self.emmisiveFactor == None:
+        #     self.emmisiveFactor = [1.0,1.0,1.0,1.0]
+        normalTexture = DictInValue(materials,"normalTexture")
+        if normalTexture != None:
+            self.normalMapIndex = normalTexture["index"]
+            self.normalMapScale = DictInValue(normalTexture,"scale")
+            if self.normalMapScale == None:
+                self.normalMapScale = 1.0
+            self.normalMapTexCoord = DictInValue(normalTexture,"texCoord")
+            if self.normalMapTexCoord == None:
+                self.normalMapTexCoord = 0
+
+class GLTF2_0Sampler:
+    def __init__(self,mag_filter,min_filter,wrap_s,wrap_t,name,extensions,extras):
+        self.magFilter = mag_filter
+        self.minFilter = min_filter
+        self.wrapS = wrap_s
+        self.wrapT = wrap_t
+        self.name = name
+        self.extensions = extensions
+        self.extras = extras
+        
+class GLTF2_0Image:
+    def __init__(self,path,sampler):
+        self.path = path
+        self.sampler = sampler
+        pass                
+
+#TODO : 使用し終わったBufferをクリアすること
 class GLTF2_0Loader:
     #外部用
     def __init__(self):
@@ -120,16 +166,18 @@ class GLTF2_0Loader:
         if self.header["asset"]["version"] != "2.0":
             raise Exception
         self.LoadBuffers()
-        self.LoadImages()
         #ここからガッツリ情報が読みだされる
         self.ParseScenes()
         #ここでindices等の情報結びつけられたデータベースが手に入る
         self.CreateDB()
-        print("complete")
+        
     #読み込まれたGLTFが何で作られたものかを返す
     #読み込まれていない場合はエラーとなる
     def GetGenerator(self):
         return self.header["asset"]["generator"]
+    #相対パス(フォルダまで)が返る
+    def GetRelativePath(self):
+        return self.relativePath
     #内部用
     #Jsonの読み込み
     def ParseHeader(self,file_path):
@@ -142,15 +190,6 @@ class GLTF2_0Loader:
         self.buffers = []
         for buffer in self.header["buffers"]:
             self.buffers += [GLTF2_0Buffer(self.relativePath + buffer["uri"],buffer["byteLength"])]
-    #テクスチャを持っていない場合はself.images = Noneとなる
-    def LoadImages(self):
-        #修正 チートシート通りにすること
-        if "images" in self.header:
-            self.images = []
-            for image in self.header["images"]:
-                self.images += [self.relativePath + image["uri"]]
-        else:
-            self.images = None
     #シーンを読んでいく
     def ParseScenes(self):
         #scenesの要素が1だと仮定 ノードへのインデックスが入っている
@@ -167,6 +206,9 @@ class GLTF2_0Loader:
         self.ParseMeshes()        
         #バイナリ情報をパース
         self.ParseBuffers()
+        #マテリアル情報をパース
+        self.ParseMaterial()
+
     #扱いやすい形式にノードをパースして変換
     def ParseNodes(self):
         self.nodes = []
@@ -224,24 +266,62 @@ class GLTF2_0Loader:
             #どの地点から読むか
             if "byteOffset" in accessor:
                 offset = accessor["byteOffset"]
-            offset += bufferView["byteOffset"]
+            if "byteOffset" in bufferView:
+                offset += bufferView["byteOffset"]
             count = accessor["count"]
             bufferData = struct.unpack_from(singleFormat*count,self.buffers[bufferIndex].rawBuffer,offset)
-            self.data += [GLTF2_0BufferData(bufferData,count,accessor["min"],accessor["max"])]
-        #生のデータには用がなくなったので削除
-        self.buffers.clear()
+            self.data += [GLTF2_0BufferData(bufferData,count,DictInValue(accessor,"min"),DictInValue(accessor,"max"))]
+
+    def ParseMaterial(self):
+        materials = DictInValue(self.header,"materials")
+        if materials == None:
+            self.materials = None
+        else:
+            self.materials = []
+            for material in materials:
+                self.materials += [GLTF2_0Material(material)]
+        self.ParseImages()
+        
+    #テクスチャを持っていない場合はself.images = Noneとなる
+    def ParseImages(self):
+        textures = DictInValue(self.header,"textures")
+        samplers = DictInValue(self.header,"samplers")
+        self.images = None
+        if textures != None:
+            self.images = []
+            for texture in textures:
+                path = self.header["images"][texture["source"]]["uri"]
+                sampler = None
+                if samplers != None:
+                    samplerData = samplers[texture["sampler"]]
+                    magFilter = SamplersFilterValueToString(DictInValue(samplerData,"magFilter"))
+                    minFilter = SamplersFilterValueToString(DictInValue(samplerData,"minFilter"))
+                    wrapS = SamplerWrapValueToString(DictInValue(samplerData,"wrapS"))
+                    wrapT = SamplerWrapValueToString(DictInValue(samplerData,"wrapT"))
+                    name = DictInValue(samplers,"name")
+                    if name == None:
+                        name = "defaultSampler"
+                    extensions = DictInValue(samplers,"extensions")
+                    extras = DictInValue(samplers,"extras")
+                    sampler = GLTF2_0Sampler(magFilter,minFilter,wrapS,wrapT,name,extensions,extras)
+                self.images += [GLTF2_0Image(path,sampler)]
+        else:#テクスチャを所持していないモデル
+            self.textures = None
+        
     def CreateDB(self):
         #インデックス
         self.dataBase = []
         #要素名
         self.dataBaseDict = {}
         for header in self.meshHeaders:
-            indicesPair = ("indices",self.data[header.indices])
-            self.dataBase += [indicesPair]
-            if "indices" in self.dataBaseDict:
-                self.dataBaseDict["indices"] += [indicesPair[1]]
-            else:
-                self.dataBaseDict["indices"] = [indicesPair[1]]
+            #インデックスが存在すれば(たいていのモデルでは存在するが、ごくまれに存在しないものがあり)
+            if header.indices != None:
+                indicesPair = ("indices",self.data[header.indices])
+                self.dataBase += [indicesPair]
+                if "indices" in self.dataBaseDict:
+                    self.dataBaseDict["indices"] += [indicesPair[1]]
+                else:
+                    self.dataBaseDict["indices"] = [indicesPair[1]]
             for attribute in header.attributes:
                 pair = (attribute,self.data[header.attributes[attribute]])
                 if attribute in self.dataBaseDict:
@@ -251,16 +331,19 @@ class GLTF2_0Loader:
                 self.dataBase += [pair]
 
 #TODO : レンダラ構築
-            
+
+         
 def Initialize(parent):
     loader = GLTF2_0Loader()
-    loader.Load("testModel.gltf")
+    loader.Load("../testModel.gltf")
     loader.Load("C:/Users/black/Desktop/2.0/2CylinderEngine/glTF/2CylinderEngine.gltf")
     loader.Load("C:/Users/black/Desktop/2.0/AlphaBlendModeTest/glTF/AlphaBlendModeTest.gltf")
     loader.Load("C:/Users/black/Desktop/2.0/Monster/glTF/Monster.gltf")
     loader.Load("C:/Users/black/Desktop/2.0/GearboxAssy/glTF/GearboxAssy.gltf")
     loader.Load("C:/Users/black/Desktop/2.0/Cameras/glTF/Cameras.gltf")
-    # loader.Load("C:/Users/black/Desktop/2.0//glTF/.gltf")
+    loader.Load("C:/Users/black/Desktop/2.0/TriangleWithoutIndices/glTF/TriangleWithoutIndices.gltf")
+    loader.Load("C:/Users/black/Desktop/2.0/WaterBottle/glTF/WaterBottle.gltf")
+    loader.Load("C:/Users/black/Desktop/glTF-Blender-Exporter-master/polly/project_polly.gltf")
     # loader.Load("C:/Users/black/Desktop/2.0//glTF/.gltf")
 
 if __name__ == "__main__":

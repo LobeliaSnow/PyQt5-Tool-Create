@@ -75,3 +75,34 @@ def VariableFormatDataLength(data_format):
         elif c == "f":
             ret += 4
     return ret
+
+def SamplersFilterValueToString(value):
+    ret = ""
+    #このデフォルト値は適当に決めたもの
+    if value == None:
+        value = 9729
+    if value == 9728:
+        ret = "NEAREST"
+    elif value == 9729:
+        ret = "LINEAR"
+    elif value == 9984:
+        ret = "NEAREST_MIPMAP_NEAREST"
+    elif value == 9985:
+        ret = "LINEAR_MIPMAP_NEAREST"
+    elif value == 9986:
+        ret = "NEAREST_MIPMAP_LINEAR"
+    elif value == 9987:
+        ret = "LINEAR_MIPMAP_LINEAR"
+    return ret
+
+def SamplerWrapValueToString(value):
+    ret = ""
+    if value == None:
+        value = 10497
+    if value == 33701:
+        ret = "CLAMP_TO_EDGE"
+    elif value == 33648:
+        ret = "MIRRORED_REPEAT"
+    elif value == 10497:
+        ret = "REPEAT"
+    return ret
