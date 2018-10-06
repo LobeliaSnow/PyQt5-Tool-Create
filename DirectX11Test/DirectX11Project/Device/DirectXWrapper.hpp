@@ -6,12 +6,12 @@
 //												author Lobelia
 //
 //-------------------------------------------------------------------------------
-
+#include "../Define/Define.hpp"
 #include <Windows.h>
 #include <d3d11.h>
-#define _XM_NO_INTRINSICS_
 #include "../D3DCompiler/d3dcompiler.h"
 #include "../DirectXTex/DirectXTex.h"
+#include <dinput.h>
 #include <wrl.h>
 #include <memory>
 #include <string>
@@ -35,11 +35,13 @@ using Microsoft::WRL::ComPtr;
 #pragma comment(lib,"d3dcompiler.lib")
 #pragma comment(lib,"dxguid.lib")
 #pragma comment(lib,"dxgi.lib")
+#pragma comment(lib,"dinput8.lib")
 #ifdef _DEBUG
 #pragma comment(lib,"DirectXTexDebug.lib")
 #else
 #pragma comment(lib,"DirectXTexRelease.lib")
 #endif
+
 
 //todo : rendertargetのdepthstencilview作成
 //memo : データとレンダラ(処理)は分ける
@@ -374,6 +376,24 @@ namespace Lobelia {
 		std::vector<ID3D11ClassInstance*> instances;
 		int instanceCount;
 	};
+	class ComputeShader :public Shader {
+	public:
+		ComputeShader(const char* file_path, const char* entry_point);
+		~ComputeShader() = default;
+	public:
+		//Python用
+		void Run(int thread_x, int thread_y, int thread_z);
+	public:
+		//static関数
+		static void SetShaderResourceView(int slot, ID3D11ShaderResourceView* uav);
+		static void SetShaderResourceView(int slot, int sum, ID3D11ShaderResourceView** srvs);
+		static void SetUnorderedAccessView(int slot, ID3D11UnorderedAccessView* uav);
+		static void SetUnorderedAccessView(int slot, int sum, ID3D11UnorderedAccessView** uavs);
+	private:
+		void CreateComputeShader();
+	private:
+		ComPtr<ID3D11ComputeShader> cs;
+	};
 	class VertexShader :public Shader {
 		friend class InputLayout;
 	public:
@@ -400,6 +420,21 @@ namespace Lobelia {
 		void CreatePixelShader();
 	private:
 		ComPtr<ID3D11PixelShader> ps;
+	};
+	class GeometryShader :public Shader {
+	public:
+		GeometryShader(const char* file_path, const char* entry_point);
+		~GeometryShader() = default;
+	public:
+		//Python用
+		void Set();
+	public:
+		//Python用 static関数
+		static void Clean();
+	private:
+		void CreateGeometryShader();
+	private:
+		ComPtr<ID3D11GeometryShader> gs;
 	};
 	class Reflection {
 	public:
@@ -476,6 +511,14 @@ namespace Lobelia {
 		void ActivateShader3D();
 		void ChangeDiffuseTexture(const char* file_name);
 		std::shared_ptr<Texture> GetDiffuseTexture();
+		void ChangeBlendState(std::shared_ptr<BlendState> blend);
+		void ChangeSamplerState(std::shared_ptr<SamplerState> sampler);
+		void ChangeRasterizerState(std::shared_ptr<RasterizerState> rasterizer);
+		void ChangeDepthStencilState(std::shared_ptr<DepthStencilState> depth_stencil);
+		std::shared_ptr<BlendState> GetBlendState();
+		std::shared_ptr<SamplerState> GetSamplerState();
+		std::shared_ptr<RasterizerState> GetRasterizerState();
+		std::shared_ptr<DepthStencilState> GetDepthStencilState();
 		//ファイルとメモリのほかにインスタンスで変更できるようにもすること
 		//またインスタンスの入手もできるようにする事
 		void ChangeVS2DMemory(std::string data, int data_len, std::string entry, ShaderModel model, bool use_linkage);
@@ -486,6 +529,10 @@ namespace Lobelia {
 		void ChangeVS3DFile(std::string file_path, std::string entry, ShaderModel model, bool use_linkage);
 		void ChangePS3DMemory(std::string data, int data_len, std::string entry, ShaderModel model, bool use_linkage);
 		void ChangePS3DFile(std::string file_path, std::string entry, ShaderModel model, bool use_linkage);
+		//後に消える 3Dと2D用のシェーダーという概念がなくなる(予定)
+		std::shared_ptr<VertexShader> GetVS3D();
+		std::shared_ptr<InputLayout> GetInputLayout3D();
+		std::shared_ptr<PixelShader> GetPS3D();
 	private:
 		//デフォルトを作成
 		void CreateEmptyMaterial();
@@ -584,6 +631,7 @@ namespace Lobelia {
 		void RotationQuaternion(const DirectX::XMVECTOR& quaternion);
 		void RotationAxis(const Vector3& axis, float rad);
 		void RotationRollPitchYaw(const Vector3& rpy);
+		void RotationRollPitchYaw(float x, float y, float z);
 		void RotationYAxis(float rad);
 		//拡縮 行列計算も行われます
 		void Scalling(const Vector3& scale);
@@ -657,4 +705,184 @@ namespace Lobelia {
 	//	const int VERTEX_COUNT_MAX;
 	//};
 	//----------------------------------------End Renderer-----------------------------------------
+
+	//--------------------------------------------------------------------------------------------------
+	//
+	//		Begin Particle
+	//
+	//--------------------------------------------------------------------------------------------------
+	//インスタンス生成少し時間かかる可能性あり
+	//生成はCPUで、更新、描画はGPUで 
+	//TODO : 後に値が不変のものは、staticにしてまとめる
+	class GPUParticleSystem {
+	public:
+		enum class BlendMode { COPY, ADD, SUB, SCREEN };
+	private:
+		ALIGN(16) struct Info {
+		public:
+			//そのフレームの追加数
+			int appendCount = 0;
+			//そのフレームの経過時間
+			float elapsedTime = 0.0f;
+			//バイトニックソートの比較する要素の間隔
+			int compareInterval = 0;
+			//昇順ソートか降順ソートかの判別用
+			BOOL divideLevel = 0;
+			BOOL isBitonicFinal = false;
+		public:
+			void Update(float elapsed_time);
+		};
+		struct RWByteAddressBuffer :public BufferBase {
+			ComPtr<ID3D11UnorderedAccessView> uav;
+			RWByteAddressBuffer(void* init_buffer, UINT element_size, UINT element_count, bool is_vertex_buffer, bool is_index_buffer, bool is_indirect_args);
+			~RWByteAddressBuffer();
+			void ResourceUpdate(void* data_buffer, UINT element_size, UINT element_count);
+		private:
+			void CreateRWByteAddressBuffer(void* init_buffer, UINT element_size, UINT element_count, bool is_vertex_buffer, bool is_index_buffer, bool is_indirect_args);
+			void CreateUAV(ComPtr<ID3D11UnorderedAccessView>& uav);
+		};
+	public:
+		//パーティクル一つを定義する構造体
+		struct Particle {
+			std::array<float, 3> pos;
+			//移動量
+			std::array<float, 3> move;
+			//加速度 (メートル毎秒毎秒)
+			std::array<float, 3>  power;
+			//使用するテクスチャの番号
+			int textureIndex;
+			//0.0f~1.0f
+			std::array<float, 2>  uvPos;
+			std::array<float, 2>  uvSize;
+			//生存時間
+			float aliveTime;
+			//経過時間
+			float elapsedTime;
+			//フェードインにかかる時間
+			float fadeInTime;
+			//フェードアウト開始時間
+			float fadeOutTime;
+			//開始時の拡大率
+			float startScale;
+			//終了時の拡大率
+			float endScale;
+			//開始時の回転角
+			float startRad;
+			//終了時の回転角
+			float endRad;
+			//補正色
+			std::array<float, 3> color;
+			Particle(float pos_x, float pos_y, float pos_z, float move_x, float move_y, float move_z, float power_x, float power_y, float power_z, int texture_index, float uv_pos_x, float uv_pos_y, float uv_size_y, float uv_size_x, float alive_time, float fade_in_time, float fade_out_time, float start_scale, float end_scale, float start_rad, float end_rad, float color_r, float color_g, float color_b);
+			Particle();
+			~Particle();
+		};
+	public:
+		GPUParticleSystem();
+		~GPUParticleSystem();
+		void LoadTexture(int slot, std::string& file_path);
+		void Append(const Particle& particle);
+		//何倍速にするかの決定
+		void Update(float time_scale = 1.0f);
+		void Render(BlendMode mode = BlendMode::ADD);
+	private:
+		void RunAppend();
+		void RunSort();
+		void RunUpdate();
+	private:
+		std::array<std::shared_ptr<BlendState>, 4> blendList;
+		std::unique_ptr<Material> material;
+		std::unique_ptr<ConstantBuffer> infoCBuffer;
+		Info info;
+		std::unique_ptr<RWByteAddressBuffer> appendData;
+		std::unique_ptr<RWByteAddressBuffer> indexBuffer;
+		std::unique_ptr<RWByteAddressBuffer> dataBuffer;
+		std::unique_ptr<RWByteAddressBuffer> indirectArgs;
+		std::unique_ptr<ComputeShader> appendCS;
+		std::unique_ptr<ComputeShader> sortCS;
+		std::unique_ptr<ComputeShader> updateCS;
+		std::unique_ptr<GeometryShader> gs;
+		std::array<std::shared_ptr<Texture>, TEXTURE_COUNT> textureList;
+		Particle appendParticles[APPEND_PARTICLE_MAX];
+		std::unique_ptr<Timer> timer;
+	private:
+		static const std::string BLEND_LIST[4];
+	};
+
+	//----------------------------------------End Particle-----------------------------------------
+
+	//--------------------------------------------------------------------------------------------------
+	//
+	//		Begin Input
+	//
+	//--------------------------------------------------------------------------------------------------
+	//デバイスを所持 static
+	class DirectInput {
+	public:
+		static void Initialize();
+		static ComPtr<IDirectInput8>& GetDevice();
+	public:
+		DirectInput() = default;
+		~DirectInput() = default;
+		DirectInput(const DirectInput&) = delete;
+		DirectInput(DirectInput&&) = delete;
+		DirectInput& operator =(const DirectInput&) = delete;
+		DirectInput& operator =(DirectInput&&) = delete;
+	private:
+		static ComPtr<IDirectInput8> device;
+	};
+	class InputDevice {
+	public:
+		ComPtr<IDirectInputDevice8>& Get();
+		void Initialize(HWND hwnd, const GUID& guid, const DIDATAFORMAT& format, bool fore_ground, bool exclusive);
+		//アクセス権取得
+		bool Acquire();
+		HWND GetParentHundle();
+	public:
+		InputDevice() = default;
+		virtual ~InputDevice() = default;
+	private:
+		ComPtr<IDirectInputDevice8> inputDevice;
+		HWND hwnd;
+	};
+	class Mouse {
+	public:
+		static void Initialize(void* hwnd, bool fore_ground = true, bool exclusive = false);
+		static void Update();
+		static BYTE GetKey(int key_code);
+		static bool IsPushAnyKey();
+		static int PushKeyNo();
+		static float GetMoveX();
+		static float GetMoveY();
+		static int GetWheel();
+		static float GetClientPosX();
+		static float GetClientPosY();
+		static float GetScreenPosX();
+		static float GetScreenPosY();
+	public:
+		Mouse() = default;
+		~Mouse() = default;
+		Mouse(const Mouse&) = delete;
+		Mouse(Mouse&&) = delete;
+		Mouse& operator =(const Mouse&) = delete;
+		Mouse& operator =(Mouse&&) = delete;
+	private:
+		static std::unique_ptr<InputDevice> device;
+		static BYTE buffer[3];
+		static float move[2];
+		static int wheel;
+		static float clientPos[2];
+		static float screenPos[2];
+		static int pushKeyNo;
+	};
+	//----------------------------------------End Input-----------------------------------------
+	//--------------------------------------------------------------------------------------------------
+	//
+	//		Begin Matrix Helper
+	//
+	//--------------------------------------------------------------------------------------------------
+	std::vector<float> GetAxisXDirection(const DirectX::XMMATRIX& matrix);
+	std::vector<float> GetAxisYDirection(const DirectX::XMMATRIX& matrix);
+	std::vector<float> GetAxisZDirection(const DirectX::XMMATRIX& matrix);
+	std::vector<float> GetPosition(const DirectX::XMMATRIX& matrix);
+	//-------------------------------------End Matrix Helper--------------------------------------
 }

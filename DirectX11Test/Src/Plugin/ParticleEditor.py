@@ -31,7 +31,6 @@ class ParticleInstance(QtCore.QAbstractListModel):
 
 class ParticleEditor(directxwidget.DirectXObject, QtWidgets.QWidget):
     windowMenu = None
-
     def __init__(self, parent):
         super(ParticleEditor, self).__init__(parent)
         self.ui = Plugin.Module.ParticleConsole.Ui_Form()

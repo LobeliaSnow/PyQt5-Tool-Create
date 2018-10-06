@@ -53,7 +53,7 @@ namespace Lobelia {
 	Texture::Texture(const ComPtr<ID3D11Texture2D>& texture) : texture(texture) {
 		D3D11_TEXTURE2D_DESC desc = {};
 		this->texture->GetDesc(&desc);
-		x = static_cast<int>(desc.Width); y = static_cast<int>(desc.Height);
+		x = i_cast(desc.Width); y = i_cast(desc.Height);
 		if (desc.BindFlags&D3D11_BIND_SHADER_RESOURCE)	CreateShaderResourceView(static_cast<TextureFormat>(desc.Format));
 	}
 	void Texture::Set(int num_slot, ShaderStageList list) {
@@ -233,7 +233,7 @@ namespace Lobelia {
 		CreateDepthView();
 	}
 	void RenderTarget::Clear(int a, int r, int g, int b) {
-		float clearColor[4] = { static_cast<float>(r) / 255.0f,static_cast<float>(g) / 255.0f,static_cast<float>(b) / 255.0f,static_cast<float>(a) / 255.0f };
+		float clearColor[4] = { f_cast(r) / 255.0f,f_cast(g) / 255.0f,f_cast(b) / 255.0f,f_cast(a) / 255.0f };
 		Device::GetContext()->ClearRenderTargetView(renderTarget.Get(), clearColor);
 		Device::GetContext()->ClearDepthStencilView(depthView.Get(), D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	}
@@ -334,7 +334,7 @@ namespace Lobelia {
 		desc.AlphaToCoverageEnable = alpha_coverage;
 		desc.IndependentBlendEnable = false;
 		desc.RenderTarget[0].BlendEnable = blend;
-		SettingPreset(&desc, static_cast<int>(preset));
+		SettingPreset(&desc, i_cast(preset));
 		desc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 		hr = Device::Get()->CreateBlendState(&desc, state.GetAddressOf());
 		if (FAILED(hr))Error::Message(ErrorCode::DXE00014);
@@ -424,7 +424,7 @@ namespace Lobelia {
 	SamplerState::SamplerState(SamplerPreset sampler, int max_anisotropy, bool is_border) {
 		HRESULT hr = S_OK;
 		D3D11_SAMPLER_DESC desc = {};
-		SettingPreset(&desc, static_cast<int>(sampler));
+		SettingPreset(&desc, i_cast(sampler));
 		if (is_border) {
 			desc.AddressU = D3D11_TEXTURE_ADDRESS_BORDER;
 			desc.AddressV = D3D11_TEXTURE_ADDRESS_BORDER;
@@ -471,7 +471,7 @@ namespace Lobelia {
 		desc.FrontCounterClockwise = false;
 		desc.AntialiasedLineEnable = true;
 		desc.MultisampleEnable = true;
-		SettingPreset(&desc, static_cast<int>(rasterizer));
+		SettingPreset(&desc, i_cast(rasterizer));
 		hr = Device::Get()->CreateRasterizerState(&desc, state.GetAddressOf());
 		if (FAILED(hr))Error::Message(ErrorCode::DXE00016);
 	}
@@ -598,12 +598,12 @@ namespace Lobelia {
 		BufferBase::Create(Get().GetAddressOf(), nullptr, stuct_size, D3D11_USAGE_DEFAULT, D3D11_BIND_CONSTANT_BUFFER, 0, 0);
 	}
 	void ConstantBuffer::SetFunctor(byte activate_shader_elements) {
-		if (activate_shader_elements & static_cast<int>(ShaderStageList::VS))	functor.push_back([this]() {Device::GetContext()->VSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
-		if (activate_shader_elements & static_cast<int>(ShaderStageList::PS))	functor.push_back([this]() {Device::GetContext()->PSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
-		if (activate_shader_elements & static_cast<int>(ShaderStageList::HS))	functor.push_back([this]() {Device::GetContext()->HSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
-		if (activate_shader_elements & static_cast<int>(ShaderStageList::GS))	functor.push_back([this]() {Device::GetContext()->GSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
-		if (activate_shader_elements & static_cast<int>(ShaderStageList::DS))	functor.push_back([this]() {Device::GetContext()->DSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
-		if (activate_shader_elements & static_cast<int>(ShaderStageList::CS))	functor.push_back([this]() {Device::GetContext()->CSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
+		if (activate_shader_elements & i_cast(ShaderStageList::VS))	functor.push_back([this]() {Device::GetContext()->VSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
+		if (activate_shader_elements & i_cast(ShaderStageList::PS))	functor.push_back([this]() {Device::GetContext()->PSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
+		if (activate_shader_elements & i_cast(ShaderStageList::HS))	functor.push_back([this]() {Device::GetContext()->HSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
+		if (activate_shader_elements & i_cast(ShaderStageList::GS))	functor.push_back([this]() {Device::GetContext()->GSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
+		if (activate_shader_elements & i_cast(ShaderStageList::DS))	functor.push_back([this]() {Device::GetContext()->DSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
+		if (activate_shader_elements & i_cast(ShaderStageList::CS))	functor.push_back([this]() {Device::GetContext()->CSSetConstantBuffers(slot, 1, Get().GetAddressOf()); });
 	}
 	void ConstantBuffer::Activate(void* cb_struct) {
 		Device::GetContext()->UpdateSubresource(Get().Get(), 0, nullptr, cb_struct, 0, 0);
@@ -697,11 +697,36 @@ namespace Lobelia {
 	ShaderLinkage* Shader::GetLinkage() { return linkage.get(); }
 	void Shader::SetLinkage(std::vector<InstanceID> ids) {
 		instanceCount = 0;
-		int count = static_cast<int>(ids.size());
+		int count = i_cast(ids.size());
 		for (int i = 0; i < count; i++) {
 			instances.push_back(linkage->instances[ids[instanceCount]]->Get().Get());
 			instanceCount++;
 		}
+	}
+
+	ComputeShader::ComputeShader(const char* file_path, const char* entry_point) :Shader(file_path, entry_point, "cs_5_0", nullptr) {
+		CreateComputeShader();
+	}
+	void ComputeShader::CreateComputeShader() {
+		HRESULT hr = Device::Get()->CreateComputeShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, cs.GetAddressOf());
+		if (FAILED(hr)) Error::Message(ErrorCode::DXE00019);
+	}
+	void ComputeShader::SetShaderResourceView(int slot, ID3D11ShaderResourceView* uav) {
+		Device::GetContext()->CSSetShaderResources(slot, 1, &uav);
+	}
+	void ComputeShader::SetShaderResourceView(int slot, int sum, ID3D11ShaderResourceView** srvs) {
+		Device::GetContext()->CSSetShaderResources(slot, sum, srvs);
+	}
+	void ComputeShader::SetUnorderedAccessView(int slot, ID3D11UnorderedAccessView* uav) {
+		Device::GetContext()->CSSetUnorderedAccessViews(slot, 1, &uav, nullptr);
+	}
+	void ComputeShader::SetUnorderedAccessView(int slot, int sum, ID3D11UnorderedAccessView** uavs) {
+		Device::GetContext()->CSSetUnorderedAccessViews(slot, sum, uavs, nullptr);
+	}
+	void ComputeShader::Run(int thread_x, int thread_y, int thread_z) {
+		Device::GetContext()->CSSetShader(cs.Get(), nullptr, 0);
+		Device::GetContext()->Dispatch(thread_x, thread_y, thread_z);
+		Device::GetContext()->CSSetShader(nullptr, nullptr, 0);
 	}
 
 	VertexShader::VertexShader(const char* file_path, const char* entry_point, ShaderModel shader_model, bool use_linkage) :Shader(file_path, entry_point, ("vs_" + GetShaderModelVersionString(shader_model)).c_str(), use_linkage ? new ShaderLinkage() : nullptr) {
@@ -728,6 +753,20 @@ namespace Lobelia {
 	}
 	void PixelShader::Set() { Device::GetContext()->PSSetShader(ps.Get(), instances.data(), instanceCount); }
 
+	GeometryShader::GeometryShader(const char* file_path, const char* entry_point) :Shader(file_path, entry_point, "gs_5_0", nullptr) {
+		CreateGeometryShader();
+	}
+	void GeometryShader::Set() {
+		Device::GetContext()->GSSetShader(gs.Get(), instances.data(), instanceCount);
+	}
+	void GeometryShader::Clean() {
+		Device::GetContext()->GSSetShader(nullptr, nullptr, 0);
+	}
+	void GeometryShader::CreateGeometryShader() {
+		HRESULT hr = Device::Get()->CreateGeometryShader(blob->GetBufferPointer(), blob->GetBufferSize(), nullptr, gs.GetAddressOf());
+		if (FAILED(hr)) Error::Message(ErrorCode::DXE00020);
+	}
+
 	Reflection::Reflection(Shader* shader) {
 		HRESULT hr = S_OK;
 		hr = D3DReflect(shader->blob->GetBufferPointer(), shader->blob->GetBufferSize(), IID_ID3D11ShaderReflection, reinterpret_cast<void**>(reflector.GetAddressOf()));
@@ -737,7 +776,7 @@ namespace Lobelia {
 	}
 	void Reflection::TakeInputparameterDescs() {
 		inputParameterDescs.resize(shaderDesc.InputParameters);
-		for (int index = 0; index < static_cast<int>(shaderDesc.InputParameters); index++) {
+		for (int index = 0; index < i_cast(shaderDesc.InputParameters); index++) {
 			reflector->GetInputParameterDesc(index, &inputParameterDescs[index]);
 		}
 	}
@@ -775,7 +814,7 @@ namespace Lobelia {
 		std::vector<D3D11_INPUT_ELEMENT_DESC> elements;
 		D3D11_SHADER_DESC shaderDesc = reflector->GetShaderDesc();
 		elements.resize(shaderDesc.InputParameters);
-		for (int index = 0; index < static_cast<int>(shaderDesc.InputParameters); index++) {
+		for (int index = 0; index < i_cast(shaderDesc.InputParameters); index++) {
 			D3D11_SIGNATURE_PARAMETER_DESC parameterDesc = reflector->GetInputParameterDesc(index);
 			std::string semantic = parameterDesc.SemanticName;
 			UINT instanceTag = SlotAssignment(semantic);
@@ -968,6 +1007,14 @@ namespace Lobelia {
 		inputLayout = std::make_shared<InputLayout>(vs.get(), reflector.get());
 	}
 	std::shared_ptr<Texture> Material::GetDiffuseTexture() { return diffuseTexture; }
+	void Material::ChangeBlendState(std::shared_ptr<BlendState> blend) { this->blend = blend; }
+	void Material::ChangeSamplerState(std::shared_ptr<SamplerState> sampler) { this->sampler = sampler; }
+	void Material::ChangeRasterizerState(std::shared_ptr<RasterizerState> rasterizer) { this->rasterizer = rasterizer; }
+	void Material::ChangeDepthStencilState(std::shared_ptr<DepthStencilState> depth_stencil) { depthStencil = depth_stencil; }
+	std::shared_ptr<BlendState> Material::GetBlendState() { return blend; }
+	std::shared_ptr<SamplerState> Material::GetSamplerState() { return sampler; }
+	std::shared_ptr<RasterizerState> Material::GetRasterizerState() { return rasterizer; }
+	std::shared_ptr<DepthStencilState> Material::GetDepthStencilState() { return depthStencil; }
 
 	void Material::ChangeVS2DMemory(std::string data, int data_len, std::string entry, ShaderModel model, bool use_linkage) {
 		vs2D = std::make_shared<VertexShader>(data.c_str(), data_len, entry.c_str(), model, use_linkage);
@@ -998,6 +1045,11 @@ namespace Lobelia {
 	void Material::ChangePS3DFile(std::string file_path, std::string entry, ShaderModel model, bool use_linkage) {
 		ps3D = std::make_shared<PixelShader>(file_path.c_str(), entry.c_str(), model, use_linkage);
 	}
+	//後に消える 3Dと2D用のシェーダーという概念がなくなる(予定)
+	std::shared_ptr<VertexShader> Material::GetVS3D() { return vs3D; }
+	std::shared_ptr<InputLayout> Material::GetInputLayout3D() { return inputLayout3D; }
+	std::shared_ptr<PixelShader> Material::GetPS3D() { return ps3D; }
+
 	//----------------------------------------End Material------------------------------------------
 
 	//--------------------------------------------------------------------------------------------------
@@ -1006,19 +1058,19 @@ namespace Lobelia {
 	//
 	//--------------------------------------------------------------------------------------------------
 	Viewport::Viewport(int pos_x, int pos_y, int size_x, int size_y) {
-		viewport.Width = static_cast<FLOAT>(size_x);
-		viewport.Height = static_cast<FLOAT>(size_y);
+		viewport.Width = f_cast(size_x);
+		viewport.Height = f_cast(size_y);
 		viewport.MinDepth = 0.0f;
 		viewport.MaxDepth = 1.0f;
-		viewport.TopLeftX = static_cast<FLOAT>(pos_x);
-		viewport.TopLeftY = static_cast<FLOAT>(pos_y);
+		viewport.TopLeftX = f_cast(pos_x);
+		viewport.TopLeftY = f_cast(pos_y);
 	}
 	void Viewport::Activate() {
 		Device::GetContext()->RSSetViewports(1, &viewport);
 	}
 	Camera::Camera(int size_x, int  size_y, float fov_rad, float near_z, float far_z) :fov(fov_rad), nearZ(near_z), farZ(far_z) {
-		constantBuffer = std::make_unique<ConstantBuffer>(0, sizeof(CBData), static_cast<int>(ShaderStageList::VS) | static_cast<int>(ShaderStageList::DS) | static_cast<int>(ShaderStageList::GS));
-		aspect = static_cast<float>(size_x) / static_cast<float>(size_y);
+		constantBuffer = std::make_unique<ConstantBuffer>(0, sizeof(CBData), i_cast(ShaderStageList::VS) | i_cast(ShaderStageList::DS) | i_cast(ShaderStageList::GS));
+		aspect = f_cast(size_x) / f_cast(size_y);
 	}
 	void Camera::SetPos(float x, float y, float z) { pos.x = x; pos.y = y; pos.z = z; pos.w = 1.0f; }
 	void Camera::SetAt(float x, float y, float z) { at.x = x; at.y = y; at.z = z; at.w = 1.0f; }
@@ -1084,6 +1136,10 @@ namespace Lobelia {
 	}
 	void Transformer::RotationRollPitchYaw(const Vector3& rpy) {
 		this->rpy = rpy;
+		rotation = DirectX::XMMatrixRotationRollPitchYaw(this->rpy.x, this->rpy.y, this->rpy.z);
+	}
+	void Transformer::RotationRollPitchYaw(float x, float y, float z) {
+		this->rpy.x = y;	this->rpy.y = z; this->rpy.z = x;
 		rotation = DirectX::XMMatrixRotationRollPitchYaw(this->rpy.x, this->rpy.y, this->rpy.z);
 	}
 	void Transformer::RotationYAxis(float rad) {
@@ -1178,5 +1234,338 @@ namespace Lobelia {
 	//	buffer->Activate();
 	//}
 	//----------------------------------------End Renderer-----------------------------------------
+
+	//--------------------------------------------------------------------------------------------------
+	//
+	//		Begin Particle
+	//
+	//--------------------------------------------------------------------------------------------------
+	void GPUParticleSystem::Info::Update(float elapsed_time) {
+		elapsedTime = elapsed_time;
+	}
+	GPUParticleSystem::RWByteAddressBuffer::RWByteAddressBuffer(void* init_buffer, UINT element_size, UINT element_count, bool is_vertex_buffer, bool is_index_buffer, bool is_indirect_args) {
+		//バッファ作成
+		CreateRWByteAddressBuffer(init_buffer, element_size, element_count, is_vertex_buffer, is_index_buffer, is_indirect_args);
+		//UAV作成
+		CreateUAV(uav);
+	}
+	GPUParticleSystem::RWByteAddressBuffer::~RWByteAddressBuffer() = default;
+	void GPUParticleSystem::RWByteAddressBuffer::CreateRWByteAddressBuffer(void* init_buffer, UINT element_size, UINT element_count, bool is_vertex_buffer, bool is_index_buffer, bool is_indirect_args) {
+		UINT bindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
+		//頂点バッファとしてバインドするか否か
+		if (is_vertex_buffer)bindFlags |= D3D11_BIND_VERTEX_BUFFER;
+		//インデックスバッファとしてバインドするか否か
+		if (is_index_buffer)bindFlags |= D3D11_BIND_INDEX_BUFFER;
+		UINT miscFlags = D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS;
+		//Indirect系の引数として使用するか否か
+		if (is_indirect_args)miscFlags |= D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS;
+		//バッファ作成
+		BufferBase::Create(Get().GetAddressOf(), init_buffer, static_cast<UINT>(element_size*element_count), D3D11_USAGE_DEFAULT, bindFlags, 0, element_size, miscFlags);
+	}
+	void GPUParticleSystem::RWByteAddressBuffer::CreateUAV(ComPtr<ID3D11UnorderedAccessView>& uav) {
+		D3D11_BUFFER_DESC bufferDesc;
+		//バッファの情報取得
+		Get()->GetDesc(&bufferDesc);
+		D3D11_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
+		uavDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+		if (bufferDesc.MiscFlags == D3D11_RESOURCE_MISC_BUFFER_STRUCTURED) {
+			//構造化バッファの場合
+			//要素数
+			uavDesc.Buffer.NumElements = bufferDesc.ByteWidth / bufferDesc.StructureByteStride;
+			uavDesc.Format = DXGI_FORMAT_UNKNOWN;
+		}
+		else if (bufferDesc.MiscFlags == D3D11_RESOURCE_MISC_BUFFER_ALLOW_RAW_VIEWS || bufferDesc.MiscFlags&D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS) {
+			//要素数(1要素はfloat又はunsigned intなので4で割る)
+			uavDesc.Buffer.NumElements = bufferDesc.ByteWidth / 4UL;
+			uavDesc.Format = DXGI_FORMAT_R32_TYPELESS;
+			uavDesc.Buffer.Flags = D3D11_BUFFER_UAV_FLAG_RAW;
+		}
+		//上の情報をもとにUAV作成
+		Device::Get()->CreateUnorderedAccessView(Get().Get(), &uavDesc, uav.GetAddressOf());
+	}
+	void GPUParticleSystem::RWByteAddressBuffer::ResourceUpdate(void* data_buffer, UINT element_size, UINT element_count) {
+		//まだボックスの部分分かっていないので調査必要
+		D3D11_BOX copyRange = { 0,0,0,element_size*element_count,1,1 };
+		Device::GetContext()->UpdateSubresource(Get().Get(), 0, &copyRange, data_buffer, element_size, element_count);
+	}
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+
+	//----------------------------------------------------------------------------------------------------
+	//	GPUParticle::Particle
+	//----------------------------------------------------------------------------------------------------
+	GPUParticleSystem::Particle::Particle(float pos_x, float pos_y, float pos_z, float move_x, float move_y, float move_z, float power_x, float power_y, float power_z, int texture_index, float uv_pos_x, float uv_pos_y, float uv_size_y, float uv_size_x, float alive_time, float fade_in_time, float fade_out_time, float start_scale, float end_scale, float start_rad, float end_rad, float color_r, float color_g, float color_b) :
+		pos{ pos_x, pos_y, pos_z }, move{ move_x,move_y,move_z }, power{ power_x,power_y,power_z }, textureIndex(texture_index), uvPos{ uv_pos_x,uv_pos_y }, uvSize{ uv_size_x,uv_size_y }, aliveTime(alive_time), elapsedTime(alive_time), fadeInTime(fade_in_time), fadeOutTime(fade_out_time), startScale(start_scale), endScale(end_scale), startRad(start_rad), endRad(end_rad), color{ color_r, color_g, color_b } {}
+	GPUParticleSystem::Particle::Particle() : Particle(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f) {	}
+	GPUParticleSystem::Particle::~Particle() = default;
+	//----------------------------------------------------------------------------------------------------
+	//----------------------------------------------------------------------------------------------------
+
+	//----------------------------------------------------------------------------------------------------
+	//	GPUParticle
+	//----------------------------------------------------------------------------------------------------
+	const std::string GPUParticleSystem::BLEND_LIST[4] = { "COPY" ,"ADD" ,"SUB" ,"SCREEN" };
+	//ブレンドプリセット
+	GPUParticleSystem::GPUParticleSystem() :textureList{} {
+		blendList[i_cast(BlendMode::COPY)] = std::make_shared<BlendState>(BlendPreset::COPY, true, false);
+		blendList[i_cast(BlendMode::ADD)] = std::make_shared<BlendState>(BlendPreset::ADD, true, false);
+		blendList[i_cast(BlendMode::SUB)] = std::make_shared<BlendState>(BlendPreset::SUB, true, false);
+		blendList[i_cast(BlendMode::SCREEN)] = std::make_shared<BlendState>(BlendPreset::SCREEN, true, false);
+		material = std::make_unique<Material>("Particle");
+		material->ChangeBlendState(blendList[i_cast(BlendMode::ADD)]);
+		material->ChangeSamplerState(std::make_shared<SamplerState>(SamplerPreset::POINT, 16));
+		material->ChangeRasterizerState(std::make_shared<RasterizerState>(RasterizerPreset::NONE));
+		material->ChangeDepthStencilState(std::make_shared<DepthStencilState>(DepthPreset::ALWAYS, false, StencilDesc{}, false));
+		material->ChangeVS3DFile("Shader/GPUParticle/GPUParticle.hlsl", "GPUParticleVS", ShaderModel::_5_0, false);
+		material->ChangePS3DFile("Shader/GPUParticle/GPUParticle.hlsl", "GPUParticlePS", ShaderModel::_5_0, false);
+		//if (!blend)blend = blendList[i_cast(BlendMode::Add)];
+		//if (!sampler)sampler = std::make_shared<SamplerState>(Graphics::SamplerPreset::POINT, 16);
+		//if (!rasterizer)rasterizer = std::make_shared<RasterizerState>(Graphics::RasterizerPreset::NONE);
+		//if (!depthStencil)depthStencil = std::make_shared<DepthStencilState>(Graphics::DepthPreset::ALWAYS, false, StencilDesc{}, false);
+		//if (!vs)vs = std::make_shared<VertexShader>("Data/ShaderFile/GPUParticle/GPUParticle.hlsl", "GPUParticleVS", VertexShader::Model::VS_4_0);
+		//if (!ps)ps = std::make_shared<PixelShader>("Data/ShaderFile/GPUParticle/GPUParticle.hlsl", "GPUParticlePS", PixelShader::Model::PS_5_0);
+		//バッファ作成
+		//ConstantBuffer(UINT slot, UINT stuct_size, byte activate_shader_elements);
+		infoCBuffer = std::make_unique<ConstantBuffer>(0, sizeof(Info), s_cast<byte>(ShaderStageList::CS));
+		appendData = std::make_unique<RWByteAddressBuffer>(appendParticles, s_cast<UINT>(sizeof(Particle)), APPEND_PARTICLE_MAX, false, false, false);
+		UINT initIndexBuffer[GPU_PARTICLE_MAX] = {};
+		for (int i = 0; i < GPU_PARTICLE_MAX; i++) {
+			initIndexBuffer[i] = i;
+		}
+		indexBuffer = std::make_unique<RWByteAddressBuffer>(initIndexBuffer, s_cast<UINT>(sizeof(UINT)), GPU_PARTICLE_MAX, false, true, false);
+		dataBuffer = std::make_unique<RWByteAddressBuffer>(nullptr, s_cast<UINT>(sizeof(Particle)), GPU_PARTICLE_MAX, true, false, false);
+		UINT initArgsBuffer[5] = {};
+		indirectArgs = std::make_unique<RWByteAddressBuffer>(initArgsBuffer, 4UL, 5UL, false, false, true);
+		//ComputeShader作成
+		appendCS = std::make_unique<ComputeShader>("Shader/GPUParticle/GPUParticle.hlsl", "AppendParticle");
+		sortCS = std::make_unique<ComputeShader>("Shader/GPUParticle/GPUParticle.hlsl", "SortParticle");
+		updateCS = std::make_unique<ComputeShader>("Shader/GPUParticle/GPUParticle.hlsl", "UpdateParticle");
+		//GeometryShader作成
+		gs = std::make_unique<GeometryShader>("Shader/GPUParticle/GPUParticle.hlsl", "GPUParticleGS");
+		////リフレクション開始
+		//std::unique_ptr<Reflection> reflector = std::make_unique<Reflection>(material->GetVS3D().get());
+		////入力レイアウト作成
+		//material->ChangeInputLayout3D(std::make_unique<InputLayout>(material->GetVS3D().get(), reflector.get()));
+		timer = std::make_unique<Timer>();
+		timer->Begin();
+	}
+	GPUParticleSystem::~GPUParticleSystem() = default;
+	void GPUParticleSystem::LoadTexture(int slot, std::string& file_path) {
+		if (slot >= TEXTURE_COUNT)Error::Message(ErrorCode::DXE90002);
+		textureList[slot] = TextureManager::Load(file_path.c_str(), true);
+	}
+	void GPUParticleSystem::Append(const Particle& particle) {
+		if (info.appendCount >= APPEND_PARTICLE_MAX) Error::Message(ErrorCode::DXE90002);
+		appendParticles[info.appendCount++] = particle;
+	}
+	void GPUParticleSystem::RunAppend() {
+		//GPUのバッファにデータを移す
+		appendData->ResourceUpdate(&appendParticles, sizeof(Particle), info.appendCount);
+		//uavの設定
+		ID3D11UnorderedAccessView* uavs[4] = { appendData->uav.Get(),indexBuffer->uav.Get(),dataBuffer->uav.Get() ,indirectArgs->uav.Get() };
+		ComputeShader::SetUnorderedAccessView(0, 4, uavs);
+		//GPUへのパーティクルの追加を実行
+		appendCS->Run(1, 1, 1);
+		info.appendCount = 0;
+		ID3D11UnorderedAccessView* resetUavs[4] = {};
+		ComputeShader::SetUnorderedAccessView(0, 4, resetUavs);
+	}
+	void GPUParticleSystem::RunSort() {
+		//uavの設定
+		ID3D11UnorderedAccessView* uavs[4] = { appendData->uav.Get(),indexBuffer->uav.Get(),dataBuffer->uav.Get() ,indirectArgs->uav.Get() };
+		ComputeShader::SetUnorderedAccessView(0, 4, uavs);
+		//分割要素数がパーティクル総数超えるまで回す
+		for (UINT divideLevel = 2; divideLevel <= GPU_PARTICLE_MAX; divideLevel <<= 1) {
+			for (UINT subDivision = divideLevel; 1 < subDivision; subDivision >>= 1) {
+				info.compareInterval = subDivision >> 1;
+				info.divideLevel = divideLevel;
+				info.isBitonicFinal = (divideLevel == GPU_PARTICLE_MAX && subDivision == 2);
+				//定数バッファの更新
+				infoCBuffer->Activate(&info);
+				//ソート実行
+				sortCS->Run(GPU_PARTICLE_MAX / LOCAL_THREAD_COUNT, 1, 1);
+			}
+		}
+		ID3D11UnorderedAccessView* resetUavs[4] = {};
+		ComputeShader::SetUnorderedAccessView(0, 4, resetUavs);
+	}
+	void GPUParticleSystem::RunUpdate() {
+		ID3D11UnorderedAccessView* uavs[4] = { appendData->uav.Get(),indexBuffer->uav.Get(),dataBuffer->uav.Get() ,indirectArgs->uav.Get() };
+		ComputeShader::SetUnorderedAccessView(0, 4, uavs);
+		//パーティクル更新処理
+		updateCS->Run(GPU_PARTICLE_MAX / (LOCAL_THREAD_COUNT*THREAD_PER_COUNT), 1, 1);
+		ID3D11UnorderedAccessView* resetUavs[4] = {};
+		ComputeShader::SetUnorderedAccessView(0, 4, resetUavs);
+	}
+	void GPUParticleSystem::Update(float time_scale) {
+		timer->End();
+		//経過時間更新
+		info.elapsedTime = timer->GetSecondResult()*time_scale;
+		//info.elapsedTime = Application::GetInstance()->GetProcessTimeMili()*time_scale / 1000.0f;
+		//定数バッファ更新
+		infoCBuffer->Activate(&info);
+		//パーティクル追加されていない場合はスルー GPUへのパーティクル追加実行
+		if (info.appendCount > 0)RunAppend();
+		//ソート実行
+		RunSort();
+		RunUpdate();
+		timer->Begin();
+	}
+	void GPUParticleSystem::Render(BlendMode mode) {
+		for (int i = 0; i < TEXTURE_COUNT; i++) {
+			if (textureList[i])textureList[i]->Set(i + 10, ShaderStageList::PS);
+		}
+		UINT stride = sizeof(Particle);
+		UINT offset = 0;
+		//重要
+		Device::GetContext()->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_POINTLIST);
+		Device::GetContext()->IASetVertexBuffers(0, 1, dataBuffer->Get().GetAddressOf(), &stride, &offset);
+		Device::GetContext()->IASetIndexBuffer(indexBuffer->Get().Get(), DXGI_FORMAT_R32_UINT, offset);
+		material->ChangeBlendState(blendList[i_cast(mode)]);
+		material->ActivateState();
+		material->ActivateShader3D();
+		gs->Set();
+		Device::GetContext()->DrawIndexedInstancedIndirect(indirectArgs->Get().Get(), 0);
+		Device::GetContext()->IASetIndexBuffer(nullptr, DXGI_FORMAT_R32_UINT, offset);
+		ID3D11Buffer* resetBuffer = nullptr;
+		Device::GetContext()->IASetVertexBuffers(0, 1, &resetBuffer, &stride, &offset);
+		//GeometryShaderのクリア
+		Device::GetContext()->GSSetShader(nullptr, nullptr, 0);
+	}
+	//----------------------------------------End Particle-----------------------------------------
+
+	//--------------------------------------------------------------------------------------------------
+	//
+	//		Begin Input
+	//
+	//--------------------------------------------------------------------------------------------------
+	ComPtr<IDirectInput8> DirectInput::device;
+	void DirectInput::Initialize() {
+		HRESULT hr = S_OK;
+		hr = DirectInput8Create(GetModuleHandle(nullptr), DIRECTINPUT_VERSION, IID_IDirectInput8, reinterpret_cast<void**>(device.GetAddressOf()), nullptr);
+		if (FAILED(hr))Error::Message(ErrorCode::DXE00400);
+	}
+	ComPtr<IDirectInput8>& DirectInput::GetDevice() { return device; }
+
+	void InputDevice::Initialize(HWND hwnd, const GUID& guid, const DIDATAFORMAT& format, bool fore_ground, bool exclusive) {
+		this->hwnd = hwnd;
+		decltype(auto) device = DirectInput::GetDevice();
+		HRESULT hr = S_OK;
+		hr = device->CreateDevice(guid, inputDevice.GetAddressOf(), nullptr);
+		if (FAILED(hr))Error::Message(ErrorCode::DXE00401);
+		hr = inputDevice->SetDataFormat(&format);
+		if (FAILED(hr))Error::Message(ErrorCode::DXE00402);
+		//協調レベルの設定
+		DWORD cooperativeLevel = 0;
+		if (fore_ground) cooperativeLevel |= DISCL_FOREGROUND;
+		else cooperativeLevel |= DISCL_BACKGROUND;
+		if (exclusive) cooperativeLevel |= DISCL_EXCLUSIVE;
+		else cooperativeLevel |= DISCL_NONEXCLUSIVE;
+		hr = inputDevice->SetCooperativeLevel(hwnd, cooperativeLevel);
+		if (FAILED(hr)) Error::Message(ErrorCode::DXE00403);
+	}
+	bool InputDevice::Acquire() {
+		HRESULT hr = inputDevice->Acquire();
+		if (FAILED(hr))return false;
+		return true;
+	}
+	ComPtr<IDirectInputDevice8>& InputDevice::Get() { return inputDevice; }
+	HWND InputDevice::GetParentHundle() { return hwnd; }
+
+	std::unique_ptr<InputDevice> Mouse::device;
+	BYTE Mouse::buffer[3];
+	float Mouse::move[2];
+	int Mouse::wheel;
+	float Mouse::clientPos[2];
+	float Mouse::screenPos[2];
+	int Mouse::pushKeyNo;
+
+	void Mouse::Initialize(void* hwnd, bool fore_ground, bool exclusive) {
+		device = std::make_unique<InputDevice>();
+		device->Initialize(static_cast<HWND>(hwnd), GUID_SysMouse, c_dfDIMouse2, fore_ground, exclusive);
+		//軸モードを相対値モードに設定
+		DIPROPDWORD property = {};
+		property.diph.dwSize = sizeof(DIPROPDWORD);
+		property.diph.dwHeaderSize = sizeof(property.diph);
+		property.diph.dwObj = 0;
+		property.diph.dwHow = DIPH_DEVICE;
+		property.dwData = DIPROPAXISMODE_REL;
+		//絶対値モードの場合
+		//property.dwData = DIPROPAXISMODE_ABS;
+		HRESULT hr = device->Get()->SetProperty(DIPROP_AXISMODE, &property.diph);
+		if (FAILED(hr))Error::Message(ErrorCode::DXE00404);
+	}
+	void Mouse::Update() {
+		DIMOUSESTATE2 state = {};
+		if (device->Acquire()) {
+			HRESULT hr = device->Get()->GetDeviceState(sizeof(DIMOUSESTATE2), &state);
+			if (FAILED(hr))Error::Message(ErrorCode::DXE00405);
+		}
+		pushKeyNo = -1;
+		for (int i = 0; i < 3; i++) {
+			buffer[i] <<= 1;
+			buffer[i] |= (state.rgbButtons[i] != 0);
+			if (pushKeyNo == -1 && buffer[i])pushKeyNo = i;
+		}
+		move[0] = f_cast(state.lX);
+		move[1] = f_cast(state.lY);
+		wheel = state.lZ;
+		//マウス座標取得
+		POINT mpos = {};
+		GetCursorPos(&mpos);
+		screenPos[0] = f_cast(mpos.x);
+		screenPos[1] = f_cast(mpos.y);
+		ScreenToClient(device->GetParentHundle(), &mpos);
+		clientPos[0] = f_cast(mpos.x);
+		clientPos[1] = f_cast(mpos.y);
+	}
+	BYTE Mouse::GetKey(int key_code) {
+		if (static_cast<UINT>(key_code) > 3)Error::Message(ErrorCode::DXE00406);
+		return buffer[key_code] & 3;
+	}
+	bool Mouse::IsPushAnyKey() { return (pushKeyNo != -1); }
+	int Mouse::PushKeyNo() { return pushKeyNo; }
+	float Mouse::GetMoveX() { return move[0]; }
+	float Mouse::GetMoveY() { return move[1]; }
+	int Mouse::GetWheel() { return wheel; }
+	float Mouse::GetClientPosX() { return clientPos[0]; }
+	float Mouse::GetClientPosY() { return clientPos[1]; }
+	float Mouse::GetScreenPosX() { return screenPos[0]; }
+	float Mouse::GetScreenPosY() { return screenPos[1]; }
+	//----------------------------------------End Input-----------------------------------------
+	//--------------------------------------------------------------------------------------------------
+	//
+	//		Begin Matrix Helper
+	//
+	//--------------------------------------------------------------------------------------------------
+	//多少遅くなるけどめんどいので
+	DirectX::XMFLOAT4X4 Store(const DirectX::XMMATRIX& matrix) {
+		DirectX::XMFLOAT4X4 ret = {};
+		DirectX::XMStoreFloat4x4(&ret, matrix);
+		return ret;
+	}
+	std::vector<float> ConverteVector(float x, float y, float z) {
+		std::vector<float> ret(3);
+		ret[0] = x; ret[1] = y; ret[2] = z;
+		return ret;
+	}
+	std::vector<float> GetAxisXDirection(const DirectX::XMMATRIX& matrix) {
+		auto ret = Store(matrix);
+		return ConverteVector(ret._11, ret._12, ret._13);
+	}
+	std::vector<float> GetAxisYDirection(const DirectX::XMMATRIX& matrix) {
+		auto ret = Store(matrix);
+		return ConverteVector(ret._21, ret._22, ret._23);
+	}
+	std::vector<float> GetAxisZDirection(const DirectX::XMMATRIX& matrix) {
+		auto ret = Store(matrix);
+		return ConverteVector(ret._31, ret._32, ret._33);
+	}
+	std::vector<float> GetPosition(const DirectX::XMMATRIX& matrix) {
+		auto ret = Store(matrix);
+		return ConverteVector(ret._41, ret._42, ret._43);
+	}
+	//-------------------------------------End Matrix Helper--------------------------------------
+
 }
 

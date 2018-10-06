@@ -15,6 +15,7 @@ namespace Lobelia {
 		std::string errorMes = "DirectX エラー\n\n";
 		errorMes += "エラーコード :DXE " + std::to_string(static_cast<int>(error)) + "\n\n";
 		switch (error) {
+		//描画関連
 		case ErrorCode::DXE00000:	errorMes += "デバイスの作成に失敗しました";								break;
 		case ErrorCode::DXE00001:	errorMes += "スワップチェインの作成に失敗しました";				break;
 		case ErrorCode::DXE00002:	errorMes += "レンダーターゲットの作成に失敗しました";				break;
@@ -34,6 +35,17 @@ namespace Lobelia {
 		case ErrorCode::DXE00016:	errorMes += "ラスタライザーステートの作成に失敗しました";		break;
 		case ErrorCode::DXE00017:	errorMes += "深度ステンシルステートの作成に失敗しました";		break;
 		case ErrorCode::DXE00018:	errorMes += "ノーマルマップの計算に失敗しました";					break;
+		case ErrorCode::DXE00019:	errorMes += "コンピュートシェーダーの作成に失敗";					break;
+		case ErrorCode::DXE00020:	errorMes += "ジオメトリシェーダーの作成に失敗";						break;
+		//入力関連
+		case ErrorCode::DXE00400:	errorMes += "Direct Inputデバイスの作成に失敗";						break;
+		case ErrorCode::DXE00401:	errorMes += "入力デバイスの作成に失敗";									break;
+		case ErrorCode::DXE00402:	errorMes += "入力デバイスのデータ設定に失敗";							break;
+		case ErrorCode::DXE00403:	errorMes += "協調レベルの設定に失敗";										break;
+		case ErrorCode::DXE00404:	errorMes += "プロパティの設定に失敗";										break;
+		case ErrorCode::DXE00405:	errorMes += "入力デバイスの情報取得に失敗";								break;
+		case ErrorCode::DXE00406:	errorMes += "範囲外のキーコードが設定されました";					break;
+		//実行時エラー
 		case ErrorCode::DXE01000:	errorMes += "テクスチャのセットに失敗しました";						break;
 		case ErrorCode::DXE01001:	errorMes += "リソースのマップに失敗しました";							break;
 		case ErrorCode::DXE01002:	errorMes += "リソースがアンマップされていません	";					break;
@@ -41,9 +53,11 @@ namespace Lobelia {
 		case ErrorCode::DXE01004:	errorMes += "テクスチャの読み込みに失敗しました	";					break;
 		case ErrorCode::DXE01005:	errorMes += "テクスチャのキャプチャに失敗しました	";				break;
 		case ErrorCode::DXE01006:	errorMes += "テクスチャの保存に失敗しました	";						break;
+		//汎用エラー
 		case ErrorCode::DXE90000:	errorMes += "リソースがNULLです";											break;
 		case ErrorCode::DXE90001:	errorMes += "バッファオーバーランです";									break;
 		case ErrorCode::DXE90002:	errorMes += "リソースの作成に失敗しました";							break;
+		case ErrorCode::DXE90003:	errorMes += "スタックオーバーフローです";								break;
 		default:								errorMes += "未定義のエラーです";											break;
 		}
 		errorMes += "\n\n担当者に連絡ください";
