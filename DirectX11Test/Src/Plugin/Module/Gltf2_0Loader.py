@@ -20,12 +20,7 @@ def DictInValue(dictionary,value_name):
 class GLTF2_0Node:
     def __init__(self,tag):
         self.tag = tag
-class GLTF2_0MeshNode(GLTF2_0Node):
-    def __init__(self,node_info):
-        super(GLTF2_0MeshNode,self).__init__("mesh")
-        self.meshIndex = node_info["mesh"]
-        #アニメーションの情報をこのノードが持っていなかったらNone
-        self.skinIndex = DictInValue(node_info,"skin")
+#トランスフォームの情報は全ノードが持ち得る情報
 class GLTF2_0TransformNode(GLTF2_0Node):
     def __init__(self,node_info):
         super(GLTF2_0TransformNode,self).__init__("transform")
@@ -44,6 +39,16 @@ class GLTF2_0TransformNode(GLTF2_0Node):
             self.scale = DictInValue(node_info,"scale")
             if self.scale == None:
                 self.scale = [1.0,1.0,1.0]
+
+class GLTF2_0MeshNode(GLTF2_0Node):
+    def __init__(self,node_info):
+        super(GLTF2_0MeshNode,self).__init__("mesh")
+        self.meshIndex = node_info["mesh"]
+        #アニメーションの情報をこのノードが持っていなかったらNone
+        self.skinIndex = DictInValue(node_info,"skin")
+        #トランスフォームの情報
+        self.transform = GLTF2_0TransformNode(node_info)
+        
 class GLTF2_0CameraNode(GLTF2_0Node):
     def __init__(self,node_info):
         super(GLTF2_0CameraNode,self).__init__("camera")
@@ -334,20 +339,18 @@ class GLTF2_0Loader:
                     self.dataBaseDict[attribute] = [pair[1]]
                 self.dataBase += [pair]
 
-#TODO : レンダラ構築
-
          
 def Initialize(parent):
     loader = GLTF2_0Loader()
-    loader.Load("../testModel.gltf")
-    loader.Load("C:/Users/black/Desktop/2.0/2CylinderEngine/glTF/2CylinderEngine.gltf")
-    loader.Load("C:/Users/black/Desktop/2.0/AlphaBlendModeTest/glTF/AlphaBlendModeTest.gltf")
-    loader.Load("C:/Users/black/Desktop/2.0/Monster/glTF/Monster.gltf")
-    loader.Load("C:/Users/black/Desktop/2.0/GearboxAssy/glTF/GearboxAssy.gltf")
-    loader.Load("C:/Users/black/Desktop/2.0/Cameras/glTF/Cameras.gltf")
-    loader.Load("C:/Users/black/Desktop/2.0/TriangleWithoutIndices/glTF/TriangleWithoutIndices.gltf")
-    loader.Load("C:/Users/black/Desktop/2.0/WaterBottle/glTF/WaterBottle.gltf")
-    loader.Load("C:/Users/black/Desktop/glTF-Blender-Exporter-master/polly/project_polly.gltf")
+    # loader.Load("../testModel.gltf")
+    loader.Load("C:/Users/2160149/Desktop/2.0/2CylinderEngine/glTF/2CylinderEngine.gltf")
+    loader.Load("C:/Users/2160149/Desktop/2.0/AlphaBlendModeTest/glTF/AlphaBlendModeTest.gltf")
+    loader.Load("C:/Users/2160149/Desktop/2.0/Monster/glTF/Monster.gltf")
+    loader.Load("C:/Users/2160149/Desktop/2.0/GearboxAssy/glTF/GearboxAssy.gltf")
+    loader.Load("C:/Users/2160149/Desktop/2.0/Cameras/glTF/Cameras.gltf")
+    loader.Load("C:/Users/2160149/Desktop/2.0/TriangleWithoutIndices/glTF/TriangleWithoutIndices.gltf")
+    loader.Load("C:/Users/2160149/Desktop/2.0/WaterBottle/glTF/WaterBottle.gltf")
+    # loader.Load("C:/Users/black/Desktop/glTF-Blender-Exporter-master/polly/project_polly.gltf")
     # loader.Load("C:/Users/black/Desktop/2.0//glTF/.gltf")
 
 if __name__ == "__main__":

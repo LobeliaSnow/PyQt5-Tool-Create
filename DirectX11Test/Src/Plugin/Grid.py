@@ -77,7 +77,7 @@ class GridSystem(directxwidget.DirectXObject,QWidget):
         vertices = []
         self.renderer.Begin()
         #升目上のグリッド作成
-        for i in range(int(-scale/2-0.5),int(scale/2+0.5),int(scale/10)):
+        for i in range(int(-scale/2-0.5),int(scale/2)+1,int(scale/10)):
             i = float(i)
             white = [1.0,1.0,1.0]
             #xの方向へ伸びる線

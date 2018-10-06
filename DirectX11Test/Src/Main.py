@@ -36,10 +36,13 @@ import random
 #             cls.uniqueInstance = cls()
 #         return cls.uniqueInstance
 
+#個人製作 第一弾
+
 class MainWindow(QMainWindow):
     def __init__(self, parent = None):
         super(MainWindow, self).__init__(parent)
         DirectX11.Device.Create(0)
+        DirectX11.DirectInput.Initialize()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.outputBrowser = StdOutputHooker()
@@ -54,13 +57,19 @@ class MainWindow(QMainWindow):
         # object2d.pos = [-0.5,0.5]
         # object2d.scale = [1.0,-1.0]
         # directxwidget.DirectXWidget.renderList += [object2d]
+        DirectX11.Mouse.Initialize(self.winId().ascapsule(),True,False)
         #ScriptManagerウインドウのインスタンス生成
         self.ScriptManagerWindow = ScriptManager(self)
         self.ScriptManagerWindow.Initialize(self)
+        self.ui.maya_connect.clicked.connect(self.ConnectMaya)
         
     def __del__(self):
         DirectX11.Device.Destroy()
 
+    def ConnectMaya(self):
+        print(self.ui.directX11Widget)
+        self.ui.directX11Widget.ConnectMaya()
+        
     def AddMenu(self,menu_name):
         if menu_name in self.menuEnum:
             return self.menuEnum[menu_name]

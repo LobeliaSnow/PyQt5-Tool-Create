@@ -8,6 +8,7 @@ from Plugin.Module.Gltf2_0Loader import *
 import Plugin.Module.GltfConsole
 import ScriptModule
 
+
 class ModelLoader(directxwidget.DirectXObject,QtWidgets.QWidget):
     windowMenu = None
     def __init__(self,parent):
@@ -59,6 +60,7 @@ class ModelLoader(directxwidget.DirectXObject,QtWidgets.QWidget):
                 ret += normal
                 ret += texcoord
         return ret
+        
     def BuildRenderer(self):
         rendererCount = len(self.loader.dataBaseDict["indices"])
         for i in range(rendererCount):
@@ -76,7 +78,26 @@ class ModelLoader(directxwidget.DirectXObject,QtWidgets.QWidget):
                 path = self.loader.images[textureIndex].path
             renderer.SetDiffuseTexture(self.loader.GetRelativePath() + path)
             renderer.SetCount(int(len(indices)))
-            self.renderers += [renderer]
+            self.renderers += [renderer]            
+            #デフォのノード
+            #使い道は現在不明
+            # self.defaultNode
+            #ノード群
+            # self.loader.nodes
+            #ノードのインデックスを管理しているリスト
+            # self.loader.sceneNodes
+        # self.Test()
+
+    def Traverse(self,node_index):
+        if self.nodes[node_index].tag == "mesh":
+            return 
+        pass
+        
+    def Test(self):
+        self.tree = []
+        for nodeIndex in self.loader.sceneNodes:
+            self.tree += [self.Traverse(nodeIndex)]
+
     def Update(self):
         if self.ui.checkBox.checkState() == Qt.Checked:
             self.wire = True
@@ -84,6 +105,7 @@ class ModelLoader(directxwidget.DirectXObject,QtWidgets.QWidget):
             self.wire = False
         for renderer in self.renderers:
             renderer.Scalling(self.ui.doubleSpinBox.value())
+            
     def Render(self):
         for renderer in self.renderers:
             renderer.Render(self.wire)

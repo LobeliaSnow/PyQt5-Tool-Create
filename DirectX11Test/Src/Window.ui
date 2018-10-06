@@ -15,9 +15,6 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
-    <item row="0" column="0" colspan="6">
-     <widget class="DirectXWidget" name="directX11Widget"/>
-    </item>
     <item row="1" column="3">
      <widget class="QPushButton" name="execute_button">
       <property name="text">
@@ -32,6 +29,16 @@
       </property>
      </widget>
     </item>
+    <item row="1" column="0">
+     <widget class="PythonEditorTrigger" name="python_button">
+      <property name="text">
+       <string>Python</string>
+      </property>
+     </widget>
+    </item>
+    <item row="1" column="1">
+     <widget class="QLineEdit" name="python_editor"/>
+    </item>
     <item row="1" column="4">
      <widget class="QLabel" name="output_label">
       <property name="text">
@@ -39,13 +46,20 @@
       </property>
      </widget>
     </item>
-    <item row="1" column="1">
-     <widget class="QLineEdit" name="python_editor"/>
-    </item>
-    <item row="1" column="0">
-     <widget class="PythonEditorTrigger" name="python_button">
+    <item row="1" column="7">
+     <widget class="QPushButton" name="maya_connect">
       <property name="text">
-       <string>Python</string>
+       <string>Connect</string>
+      </property>
+     </widget>
+    </item>
+    <item row="0" column="0" colspan="8">
+     <widget class="DirectXWidget" name="directX11Widget"/>
+    </item>
+    <item row="1" column="6">
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string>Mayaと接続</string>
       </property>
      </widget>
     </item>
