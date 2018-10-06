@@ -5,7 +5,6 @@ from PyQt5 import QtCore
 import DirectX11
 import random
 import numpy as np
-import pyautogui
 import socket
 import struct
 

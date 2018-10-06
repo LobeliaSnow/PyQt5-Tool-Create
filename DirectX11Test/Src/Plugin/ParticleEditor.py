@@ -13,7 +13,7 @@ import ScriptModule
 # 値のコピーとインスタンスの削除ができるように
 
 
-class ParticleInstance(QtWidgets.QAbstractListModel):
+class ParticleInstance(QtCore.QAbstractListModel):
     def __init__(self, parent):
         super(ParticleInstance, self).__init__(parent)
         #パーティクルパラメーター
