@@ -836,8 +836,14 @@ namespace Lobelia {
 	//とりあえず何も考えず適当に
 	std::string constantBufferInfo = {
 		"cbuffer Camera : register(b0) {\n"
-		"	float4x4 view;\n"
-		"	float4x4 projection;\n"
+		"	column_major float4x4 view;\n"
+		"	column_major float4x4 projection;\n"
+		"	column_major float4x4 billboardMat;\n"
+		"	float4 cpos;\n"
+		"struct Frustum{\n"
+		"	float4 center[6];\n"
+		"	float4 normal[6];\n"
+		"} frustum;\n"
 		"};\n"
 		"cbuffer Model : register(b1) {\n"
 		"	float4x4 world;\n"
@@ -1079,7 +1085,66 @@ namespace Lobelia {
 		CBData data = {};
 		data.projection = DirectX::XMMatrixTranspose(CreateProjection(fov, aspect, nearZ, farZ));
 		data.view = DirectX::XMMatrixTranspose(CreateView(pos, at, up));
+		data.billboardMat = DirectX::XMMatrixTranspose(CreateBillboardMat(pos, at, up));
+		data.frustum = frustum;
 		constantBuffer->Activate(&data);
+	}
+	void Camera::CreateFrustum() {
+		//情報をロード
+		DirectX::XMVECTOR dAt = DirectX::XMLoadFloat4(&at);
+		DirectX::XMVECTOR dPos = DirectX::XMLoadFloat4(&pos);
+		DirectX::XMVECTOR dUp = DirectX::XMLoadFloat4(&up);
+		//三軸算出
+		DirectX::XMVECTOR camZ = DirectX::XMVector3Normalize(dAt - dPos);
+		DirectX::XMVECTOR camX = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(dUp, camZ));
+		DirectX::XMVECTOR camY = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(camZ, camX));
+		float nearHeight = tanf(fov*0.5f)*nearZ;
+		float farHeight = tanf(fov*0.5f)*farZ;
+		//視錘台の幅取得
+		float nearWidth = nearHeight * aspect;
+		float farWidth = farHeight * aspect;
+		//中心地算出
+		DirectX::XMVECTOR nearPlaneCenter = dPos + camZ * nearZ;
+		DirectX::XMVECTOR farPlaneCenter = dPos + camZ * farZ;
+		//視錘台頂点算出
+		DirectX::XMVECTOR frustumVertices[8];
+		frustumVertices[0] = nearPlaneCenter - camX * nearWidth + camY * nearHeight;
+		frustumVertices[1] = nearPlaneCenter - camX * nearWidth - camY * nearHeight;
+		frustumVertices[2] = nearPlaneCenter + camX * nearWidth - camY * nearHeight;
+		frustumVertices[3] = nearPlaneCenter + camX * nearWidth + camY * nearHeight;
+		frustumVertices[4] = farPlaneCenter - camX * farWidth + camY * farHeight;
+		frustumVertices[5] = farPlaneCenter - camX * farWidth - camY * farHeight;
+		frustumVertices[6] = farPlaneCenter + camX * farWidth - camY * farHeight;
+		frustumVertices[7] = farPlaneCenter + camX * farWidth + camY * farHeight;
+		//重点算出
+		DirectX::XMVECTOR temp;
+		temp = (frustumVertices[0] + frustumVertices[1] + frustumVertices[2] + frustumVertices[3]) / 4.0f;
+		DirectX::XMStoreFloat4(&frustum.center[0], temp);
+		temp = (frustumVertices[0] + frustumVertices[3] + frustumVertices[4] + frustumVertices[7]) / 4.0f;
+		DirectX::XMStoreFloat4(&frustum.center[1], temp);
+		temp = (frustumVertices[0] + frustumVertices[1] + frustumVertices[4] + frustumVertices[5]) / 4.0f;
+		DirectX::XMStoreFloat4(&frustum.center[2], temp);
+		temp = (frustumVertices[1] + frustumVertices[2] + frustumVertices[5] + frustumVertices[6]) / 4.0f;
+		DirectX::XMStoreFloat4(&frustum.center[3], temp);
+		temp = (frustumVertices[3] + frustumVertices[2] + frustumVertices[7] + frustumVertices[6]) / 4.0f;
+		DirectX::XMStoreFloat4(&frustum.center[4], temp);
+		temp = (frustumVertices[4] + frustumVertices[5] + frustumVertices[6] + frustumVertices[7]) / 4.0f;
+		DirectX::XMStoreFloat4(&frustum.center[5], temp);
+		//法線算出
+		temp = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(frustumVertices[1] - frustumVertices[0], frustumVertices[2] - frustumVertices[0]));
+		DirectX::XMStoreFloat4(&frustum.normal[0], temp);
+		temp = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(frustumVertices[3] - frustumVertices[0], frustumVertices[4] - frustumVertices[0]));
+		DirectX::XMStoreFloat4(&frustum.normal[1], temp);
+		temp = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(frustumVertices[4] - frustumVertices[0], frustumVertices[1] - frustumVertices[0]));
+		DirectX::XMStoreFloat4(&frustum.normal[2], temp);
+		temp = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(frustumVertices[5] - frustumVertices[1], frustumVertices[2] - frustumVertices[1]));
+		DirectX::XMStoreFloat4(&frustum.normal[3], temp);
+		temp = DirectX::XMVector3Normalize(DirectX::XMVector3Cross(frustumVertices[2] - frustumVertices[3], frustumVertices[7] - frustumVertices[3]));
+		DirectX::XMStoreFloat4(&frustum.normal[4], temp);
+		frustum.normal[5].x = -frustum.normal[0].x;
+		frustum.normal[5].y = -frustum.normal[0].y;
+		frustum.normal[5].z = -frustum.normal[0].z;
+		frustum.normal[5].w = -frustum.normal[0].w;
 	}
 	DirectX::XMMATRIX Camera::CreateProjection(float fov_rad, float aspect, float near_z, float far_z) {
 		DirectX::XMMATRIX projection = DirectX::XMMatrixPerspectiveFovLH(fov_rad, aspect, near_z, far_z);
@@ -1092,7 +1157,17 @@ namespace Lobelia {
 		DirectX::XMMATRIX view = DirectX::XMMatrixLookAtLH(eyePos, eyeAt, eyeUp);
 		return view;
 	}
+	DirectX::XMMATRIX Camera::CreateBillboardMat(const DirectX::XMFLOAT4& pos, const DirectX::XMFLOAT4& at, const DirectX::XMFLOAT4&up) {
+		DirectX::XMVECTOR eyePos = DirectX::XMLoadFloat4(&pos);
+		DirectX::XMVECTOR eyeAt = DirectX::XMLoadFloat4(&at);
+		DirectX::XMVECTOR eyeUp = DirectX::XMLoadFloat4(&up);
+		DirectX::XMVECTOR invAt = DirectX::XMVector4Normalize(eyePos - eyeAt);
+		DirectX::XMVECTOR origin{ 0.0f, 0.0f, 0.0f, 0.0f };
+		DirectX::XMMATRIX billboard = DirectX::XMMatrixLookAtLH(origin, invAt, eyeUp);
+		DirectX::XMVECTOR arg = {};
+		return DirectX::XMMatrixInverse(&arg, billboard);
 
+	}
 	//----------------------------------------End Viewport------------------------------------------
 
 	//--------------------------------------------------------------------------------------------------

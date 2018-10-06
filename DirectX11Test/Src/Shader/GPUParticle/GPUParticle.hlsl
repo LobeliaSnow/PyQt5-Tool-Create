@@ -1,13 +1,13 @@
 #include "GPUParticleDefine.hlsli"
 #include "../Common/Common.hlsli"
 
-//’Ç‰Á—pƒoƒbƒtƒ@
+//è¿½åŠ ç”¨ãƒãƒƒãƒ•ã‚¡
 RWByteAddressBuffer appendData : register(u0);
-//ƒCƒ“ƒfƒbƒNƒXƒoƒbƒtƒ@
+//ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ãƒãƒƒãƒ•ã‚¡
 RWByteAddressBuffer particleIndex : register(u1);
-//•`‰æ—p
+//æç”»ç”¨
 RWByteAddressBuffer particleData : register(u2);
-//ˆø”—pƒoƒbƒtƒ@
+//å¼•æ•°ç”¨ãƒãƒƒãƒ•ã‚¡
 RWByteAddressBuffer indirectArgs : register(u3);
 
 Texture2D txDiffuse8 : register(t10);
@@ -48,7 +48,7 @@ cbuffer GPUParticleInfo : register(b0)
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //	AppendParticle
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-//•`‰æ—pƒoƒbƒtƒ@‚Éƒf[ƒ^‚ğ’Ç‰Á
+//æç”»ç”¨ãƒãƒƒãƒ•ã‚¡ã«ãƒ‡ãƒ¼ã‚¿ã‚’è¿½åŠ 
 inline void AppendParticleBuffer(uint data_index)
 {
 	uint appendDataIndex = data_index * PARTICLE_DATA_SIZE;
@@ -85,20 +85,20 @@ inline void AppendParticleBuffer(uint data_index)
 	particleData.Store3(particleDataIndex + PARTICLE_COLOR_OFFSET, appendData.Load3(appendDataIndex + PARTICLE_COLOR_OFFSET));
 }
 
-//ƒXƒŒƒbƒh”  ’Ç‰Á‚µ‚½‚¢ƒp[ƒeƒBƒNƒ‹‘” / 1ƒXƒŒƒbƒh‚Å’Ç‰Á‚·‚é” + 1(ŒJ‚èã‚°)
+//ã‚¹ãƒ¬ãƒƒãƒ‰æ•° ï¼ è¿½åŠ ã—ãŸã„ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«ç·æ•° / 1ã‚¹ãƒ¬ãƒƒãƒ‰ã§è¿½åŠ ã™ã‚‹æ•° + 1(ç¹°ã‚Šä¸Šã’)
 [numthreads(APPEND_PARTICLE_MAX / THREAD_PER_COUNT, 1, 1)]
 void AppendParticle(uint3 thread_id : SV_DispatchThreadID)
 {
-	//1ƒXƒŒƒbƒh‚Å•¡”‚Ìƒp[ƒeƒBƒNƒ‹‚ğˆ—
+	//1ã‚¹ãƒ¬ãƒƒãƒ‰ã§è¤‡æ•°ã®ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«ã‚’å‡¦ç†
 	for (int i = 0; i < THREAD_PER_COUNT; i++)
 	{
-		//ƒXƒŒƒbƒh”Ô†~Å‘åˆ—”{ƒ‹[ƒvˆ—”Ô†
+		//ã‚¹ãƒ¬ãƒƒãƒ‰ç•ªå·Ã—æœ€å¤§å‡¦ç†æ•°ï¼‹ãƒ«ãƒ¼ãƒ—å‡¦ç†ç•ªå·
 		uint dataIndex = thread_id.x * THREAD_PER_COUNT + i;
-		//’Ç‰Á”‚ğ’´‚¦‚é‚à‚Ì‚ÍœŠO
+		//è¿½åŠ æ•°ã‚’è¶…ãˆã‚‹ã‚‚ã®ã¯é™¤å¤–
 		if (dataIndex >= (uint) appendCount)	return;
-		//ƒp[ƒeƒBƒNƒ‹Å‘å”§ŒÀ 
+		//ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«æœ€å¤§æ•°åˆ¶é™ 
 		if (CHECK_PARTICLE_MAX_COUNT(dataIndex))	return;
-		//ƒp[ƒeƒBƒNƒ‹’Ç‰Áˆ—
+		//ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«è¿½åŠ å‡¦ç†
 		AppendParticleBuffer(dataIndex);
 	}
 }
@@ -108,50 +108,50 @@ void AppendParticle(uint3 thread_id : SV_DispatchThreadID)
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 inline void BitonicSort(uint thread_id, uint data_index[2])
 {
-	//‘ÎÛ‚Ìƒf[ƒ^ƒAƒhƒŒƒX‚ğæ“¾
+	//å¯¾è±¡ã®ãƒ‡ãƒ¼ã‚¿ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚’å–å¾—
 	uint particleAddress[2];
 	particleAddress[0] = asuint(particleIndex.Load(data_index[0]));
 	particleAddress[1] = asuint(particleIndex.Load(data_index[1]));
-	//‘ÎÛƒp[ƒeƒBƒNƒ‹‚Ì¶‘¶ŠÔ‚ğæ“¾‚µ(ƒ\[ƒgŠî€)
+	//å¯¾è±¡ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«ã®ç”Ÿå­˜æ™‚é–“ã‚’å–å¾—ã—(ã‚½ãƒ¼ãƒˆåŸºæº–)
 	bool isAlive[2];
 	isAlive[0] = (bool)(0.0f < asfloat((particleData.Load(particleAddress[0] * PARTICLE_DATA_SIZE + PARTICLE_ELAPSED_TIME_OFFSET))));
 	isAlive[1] = (bool)(0.0f < asfloat((particleData.Load(particleAddress[1] * PARTICLE_DATA_SIZE + PARTICLE_ELAPSED_TIME_OFFSET))));
-	//¸‡‚©”Û‚©
+	//æ˜‡é †ã‹å¦ã‹
 	bool isSortModeASC = !(bool)(thread_id / divideLevel % 2);
-	//ŒğŠ·‚·‚é‚©”Û‚©
+	//äº¤æ›ã™ã‚‹ã‹å¦ã‹
 	bool isTrade = (bool)(isAlive[0] == isSortModeASC);
-	//ŒğŠ·‚ğã‚ÌŒ‹‰Ê‚ÉŠî‚Ã‚«s‚¤
+	//äº¤æ›ã‚’ä¸Šã®çµæœã«åŸºã¥ãè¡Œã†
 	particleIndex.Store(data_index[0], asuint(particleAddress[0 ^ isTrade]));
 	particleIndex.Store(data_index[1], asuint(particleAddress[1 ^ isTrade]));
 }
 inline void ConfigureIndirectArgs(uint thread_id, uint data_index[2])
 {
 	//------------------------------------------------------------------------------------
-	//	”z—ñ‚Ì’†g [0] €–Sƒp[ƒeƒBƒNƒ‹->[MAX]¶‘¶ƒp[ƒeƒBƒNƒ‹
+	//	é…åˆ—ã®ä¸­èº« [0] æ­»äº¡ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«->[MAX]ç”Ÿå­˜ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«
 	//------------------------------------------------------------------------------------
-	//©•ª‚Æã‰º‚Ì—v‘f‚Ì€–S”
+	//è‡ªåˆ†ã¨ä¸Šä¸‹ã®è¦ç´ ã®æ­»äº¡æ•°
 	uint deadCount = 0;
-	//©•ª‚Æã‰º‚Ì—v‘f”Ô†æ“¾—p
+	//è‡ªåˆ†ã¨ä¸Šä¸‹ã®è¦ç´ ç•ªå·å–å¾—ç”¨
 	uint aroundIndex;
-	//©•ª‚æ‚è‚àˆê‚Â‘O‚Ì—v‘f‚ÌŠm”F
-	//‚à‚µ‚àdata_index[0]==0‚Ì‚ÍAthread_id‚ª0‚Å‚ ‚é‚±‚Æ‚ğ¦‚µA1‚Â‘O‚Ì—v‘f-1‚Í‘¶İ‚µ‚È‚¢‚Ì‚Å€–Sˆµ‚¢‚Æ‚·‚é
+	//è‡ªåˆ†ã‚ˆã‚Šã‚‚ä¸€ã¤å‰ã®è¦ç´ ã®ç¢ºèª
+	//ã‚‚ã—ã‚‚data_index[0]==0ã®æ™‚ã¯ã€thread_idãŒ0ã§ã‚ã‚‹ã“ã¨ã‚’ç¤ºã—ã€1ã¤å‰ã®è¦ç´ -1ã¯å­˜åœ¨ã—ãªã„ã®ã§æ­»äº¡æ‰±ã„ã¨ã™ã‚‹
 	if (data_index[0] == 0)deadCount++;
 	else {
-		//ˆê‚Âã‚Ì—v‘f”Ô†
+		//ä¸€ã¤ä¸Šã®è¦ç´ ç•ªå·
 		aroundIndex = asuint(particleIndex.Load(data_index[0] - 4));
 		deadCount += (uint)(0.0f >= asfloat(particleData.Load(aroundIndex*PARTICLE_DATA_SIZE + PARTICLE_ELAPSED_TIME_OFFSET)));
 	}
-	//©•ª‚ÌŠm”F
+	//è‡ªåˆ†ã®ç¢ºèª
 	aroundIndex = asuint(particleIndex.Load(data_index[0]));
 	deadCount += (uint)(0.0f >= asfloat(particleData.Load(aroundIndex*PARTICLE_DATA_SIZE + PARTICLE_ELAPSED_TIME_OFFSET)));
-	//1‚ÂŒã‚Ì—v‘f‚ÌŠm”F
+	//1ã¤å¾Œã®è¦ç´ ã®ç¢ºèª
 	aroundIndex = asuint(particleIndex.Load(data_index[0] + 4));
 	deadCount += (uint)(0.0f >= asfloat(particleData.Load(aroundIndex*PARTICLE_DATA_SIZE + PARTICLE_ELAPSED_TIME_OFFSET)));
-	//€–S”‚ª1ˆÈã‚ÅŠA¶‘¶ƒp[ƒeƒBƒNƒ‹‚ª‘¶İ‚·‚é¶€‚Ì‹«ŠE
+	//æ­»äº¡æ•°ãŒ1ä»¥ä¸Šã§ä¸”ã€ç”Ÿå­˜ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«ãŒå­˜åœ¨ã™ã‚‹æ™‚ç”Ÿæ­»ã®å¢ƒç•Œ
 	if (deadCount >= 1 && deadCount <= 2) {
-		//€–Sƒp[ƒeƒBƒNƒ‹‘” = ©•ª - 1 + 3—v‘f‚Ì€–S”
+		//æ­»äº¡ãƒ‘ãƒ¼ãƒ†ã‚£ã‚¯ãƒ«ç·æ•° = è‡ªåˆ† - 1 + 3è¦ç´ ã®æ­»äº¡æ•°
 		deadCount = (int)thread_id + (int)deadCount;
-		//‹«ŠE‚ğ”­Œ©‚µ‚½‚Ì‚ÅAˆø”ƒoƒbƒtƒ@‚Ì\’z
+		//å¢ƒç•Œã‚’ç™ºè¦‹ã—ãŸã®ã§ã€å¼•æ•°ãƒãƒƒãƒ•ã‚¡ã®æ§‹ç¯‰
 		indirectArgs.Store(INDIRECT_ARGS_INDEX_COUNT, asuint(GPU_PARTICLE_MAX - deadCount));
 		indirectArgs.Store(INDIRECT_ARGS_INSTANCE_COUNT, asuint(1));
 		indirectArgs.Store(INDIRECT_ARGS_START_LOCATION, asuint(deadCount));
@@ -163,18 +163,18 @@ inline void ConfigureIndirectArgs(uint thread_id, uint data_index[2])
 void SortParticle(uint3 thread_id : SV_DispatchThreadID)
 {
 	indirectArgs.Store(INDIRECT_ARGS_INDEX_COUNT, asuint(0));
-	//2—v‘f‚ğˆê‚Â‚ÌƒXƒŒƒbƒh‚Ås‚¤‚½‚ßAd•¡‚·‚é‚à‚Ì‚ÍƒXƒLƒbƒv
+	//2è¦ç´ ã‚’ä¸€ã¤ã®ã‚¹ãƒ¬ãƒƒãƒ‰ã§è¡Œã†ãŸã‚ã€é‡è¤‡ã™ã‚‹ã‚‚ã®ã¯ã‚¹ã‚­ãƒƒãƒ—
 	bool skip = (bool)(thread_id.x / compareInterval % 2);
 	if (skip)	return;
-	//‘ÎÛ‚ÌƒCƒ“ƒfƒbƒNƒX‚ğZo
+	//å¯¾è±¡ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’ç®—å‡º
 	uint dataIndex[2];
 	dataIndex[0] = thread_id.x * 4;
 	dataIndex[1] = (thread_id.x + compareInterval) * 4;
-	//ƒ\[ƒgÀs(‚±‚Ìƒ\[ƒg‚Ì«¿ãACPU‘¤‚Å•¡”‰ñÀs‚³‚ê‚Äƒ\[ƒg‚ªŠ®—¹‚·‚é)
+	//ã‚½ãƒ¼ãƒˆå®Ÿè¡Œ(ã“ã®ã‚½ãƒ¼ãƒˆã®æ€§è³ªä¸Šã€CPUå´ã§è¤‡æ•°å›å®Ÿè¡Œã•ã‚Œã¦ã‚½ãƒ¼ãƒˆãŒå®Œäº†ã™ã‚‹)
 	BitonicSort(thread_id.x, dataIndex);
-	//ƒXƒŒƒbƒh“¯Šú‘Ò‚¿
+	//ã‚¹ãƒ¬ãƒƒãƒ‰åŒæœŸå¾…ã¡
 	GroupMemoryBarrierWithGroupSync();
-	//ƒoƒCƒgƒjƒbƒNƒ\[ƒg‚ªÅIƒXƒeƒbƒv‚Å‚ ‚é‚È‚ç
+	//ãƒã‚¤ãƒˆãƒ‹ãƒƒã‚¯ã‚½ãƒ¼ãƒˆãŒæœ€çµ‚ã‚¹ãƒ†ãƒƒãƒ—ã§ã‚ã‚‹ãªã‚‰
 	if (isBitonicFinal)	ConfigureIndirectArgs(thread_id.x, dataIndex);
 }
 
@@ -185,9 +185,9 @@ void UpdateIndividualParticle(uint data_offset)
 {
 	const uint aliveOffset = data_offset + PARTICLE_ELAPSED_TIME_OFFSET;
 	const uint maxAliveOffset = data_offset + PARTICLE_ALIVE_TIME_OFFSET;
-	//Œ»İ‚ÌŒo‰ßŠÔæ“¾
+	//ç¾åœ¨ã®çµŒéæ™‚é–“å–å¾—
 	float time = asfloat(particleData.Load(aliveOffset));
-	//ŠÔŒo‰ß
+	//æ™‚é–“çµŒé
 	time -= elapsedTime;
 	particleData.Store(aliveOffset, asuint(time));
 	if (time < 0)return;
@@ -199,13 +199,13 @@ void UpdateIndividualParticle(uint data_offset)
 	float3 pos = asfloat(particleData.Load3(posOffset));
 	float3 move = asfloat(particleData.Load3(moveOffset));
 	float3 power = asfloat(particleData.Load3(powerOffset));
-	//ˆÚ“®
+	//ç§»å‹•
 	//move = move * elapsedTime + 0.5f * power * (elapsedTime * elapsedTime);
-	//ã‚ÆƒCƒR[ƒ‹ “WŠJ‚·‚é‚ÆŒö®’Ê‚èã‚É‚È‚é
+	//ä¸Šã¨ã‚¤ã‚³ãƒ¼ãƒ« å±•é–‹ã™ã‚‹ã¨å…¬å¼é€šã‚Šä¸Šã«ãªã‚‹
 	move = ((elapsedTime * power * 0.5f) + move) * elapsedTime;
 	pos += move;
 	move /= elapsedTime;
-	//“K—p
+	//é©ç”¨
 	particleData.Store3(posOffset, asuint(pos));
 	particleData.Store3(moveOffset, asuint(move));
 }
@@ -217,13 +217,13 @@ void UpdateParticle(uint3 thread_id : SV_DispatchThreadID)
 		uint dataIndex = thread_id.x * THREAD_PER_COUNT + i;
 		if (CHECK_PARTICLE_MAX_COUNT(dataIndex))return;
 		dataIndex *= PARTICLE_DATA_SIZE;
-		//XV
+		//æ›´æ–°
 		UpdateIndividualParticle(dataIndex);
 	}
 }
 
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-//	•`‰æ—p\‘¢‘Ì
+//	æç”»ç”¨æ§‹é€ ä½“
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 struct GS_IN {
 	float3 pos:POSITION;
@@ -253,7 +253,7 @@ struct GS_OUT
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 //	VertexShader
 //-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-//’¸“_ƒVƒF[ƒ_[‚ÍƒXƒ‹[
+//é ‚ç‚¹ã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã¯ã‚¹ãƒ«ãƒ¼
 GS_IN GPUParticleVS(GS_IN vs_in)
 {
 	return vs_in;
@@ -265,7 +265,7 @@ GS_IN GPUParticleVS(GS_IN vs_in)
 [maxvertexcount(4)]
 void GPUParticleGS(point GS_IN gs_in[1], inout TriangleStream<GS_OUT> triangle_stream)
 {
-	//is—¦
+	//é€²è¡Œç‡
 	float nowRate = 1.0f - gs_in[0].elapsedTime / gs_in[0].aliveTime;
 	float scale = lerp(gs_in[0].startScale, gs_in[0].endScale, nowRate);
 	if (!IsFrustumRange(gs_in[0].pos, sqrt(scale*scale * 2)))return;
@@ -274,38 +274,38 @@ void GPUParticleGS(point GS_IN gs_in[1], inout TriangleStream<GS_OUT> triangle_s
 	float alpha = 1.0f;
 	if (invElapsedTime <= gs_in[0].fadeInTime)alpha = (float)invElapsedTime / gs_in[0].fadeInTime;
 	else if (invElapsedTime >= gs_in[0].fadeOutTime)alpha = 1.0f - (float)(invElapsedTime - gs_in[0].fadeOutTime) / (float)(gs_in[0].aliveTime - gs_in[0].fadeOutTime);
-	//ƒ[ƒ‹ƒh•ÏŠ·s—ñì¬
+	//ãƒ¯ãƒ¼ãƒ«ãƒ‰å¤‰æ›è¡Œåˆ—ä½œæˆ
 	matrix wvp = GetIdentityMatrix();
 	wvp._11_21 = float2(cos(angle), sin(angle));
 	wvp._12_22 = float2(-sin(angle), cos(angle));
-	//ƒrƒ‹ƒ{[ƒhs—ñ‚©‚çwvp•ÏŠ·s—ñì¬
+	//ãƒ“ãƒ«ãƒœãƒ¼ãƒ‰è¡Œåˆ—ã‹ã‚‰wvpå¤‰æ›è¡Œåˆ—ä½œæˆ
 	wvp = mul(transpose(billboardMat), wvp);
 	wvp._14_24_34 = gs_in[0].pos;
 	matrix vp = transpose(view);
 	vp = mul(transpose(projection), vp);
 	wvp = mul(vp, wvp);
 	GS_OUT gs_out[4] = (GS_OUT[4])0;
-	//’¸“_ì¬
+	//é ‚ç‚¹ä½œæˆ
 	gs_out[0].pos = mul(wvp, float4(0.5*scale, 0.5*scale, 0.0f, 1.0f));
 	gs_out[1].pos = mul(wvp, float4(-0.5*scale, 0.5*scale, 0.0f, 1.0f));
 	gs_out[2].pos = mul(wvp, float4(0.5*scale, -0.5*scale, 0.0f, 1.0f));
 	gs_out[3].pos = mul(wvp, float4(-0.5*scale, -0.5*scale, 0.0f, 1.0f));
-	//uvİ’è
+	//uvè¨­å®š
 	gs_out[0].tex = gs_in[0].uvPos;
 	gs_out[1].tex = gs_in[0].uvPos + float2(gs_in[0].uvSize.x, 0.0f);
 	gs_out[2].tex = gs_in[0].uvPos + float2(0.0f, gs_in[0].uvSize.y);
 	gs_out[3].tex = gs_in[0].uvPos + gs_in[0].uvSize;
-	//ƒAƒ‹ƒtƒ@’lİ’è
+	//ã‚¢ãƒ«ãƒ•ã‚¡å€¤è¨­å®š
 	gs_out[0].color = float4(gs_in[0].color.rgb, alpha);
 	gs_out[1].color = float4(gs_in[0].color.rgb, alpha);
 	gs_out[2].color = float4(gs_in[0].color.rgb, alpha);
 	gs_out[3].color = float4(gs_in[0].color.rgb, alpha);
-	//ƒeƒNƒXƒ`ƒƒİ’è
+	//ãƒ†ã‚¯ã‚¹ãƒãƒ£è¨­å®š
 	gs_out[0].texIndex = gs_in[0].textureIndex;
 	gs_out[1].texIndex = gs_in[0].textureIndex;
 	gs_out[2].texIndex = gs_in[0].textureIndex;
 	gs_out[3].texIndex = gs_in[0].textureIndex;
-	//ƒXƒgƒŠ[ƒ€‚Éo—Í
+	//ã‚¹ãƒˆãƒªãƒ¼ãƒ ã«å‡ºåŠ›
 	triangle_stream.Append(gs_out[0]);
 	triangle_stream.Append(gs_out[1]);
 	triangle_stream.Append(gs_out[2]);
@@ -319,17 +319,17 @@ void GPUParticleGS(point GS_IN gs_in[1], inout TriangleStream<GS_OUT> triangle_s
 float4 GPUParticlePS(GS_OUT gs_out) : SV_Target
 {
 	float4 color;
-switch (gs_out.texIndex)
-{
-case 0:	color = txDiffuse8.Sample(samPoint, gs_out.tex);  break;
-case 1:	color = txDiffuse9.Sample(samPoint, gs_out.tex);  break;
-case 2:	color = txDiffuse10.Sample(samPoint, gs_out.tex); break;
-case 3:	color = txDiffuse11.Sample(samPoint, gs_out.tex); break;
-case 4:	color = txDiffuse12.Sample(samPoint, gs_out.tex); break;
-case 5:	color = txDiffuse13.Sample(samPoint, gs_out.tex); break;
-case 6:	color = txDiffuse14.Sample(samPoint, gs_out.tex); break;
-case 7:	color = txDiffuse15.Sample(samPoint, gs_out.tex); break;
-default:	color = float4(1.0f,1.0f,1.0f,1.0f);							 break;
-}
-return color * gs_out.color;
+	switch (gs_out.texIndex)
+	{
+		case 0:	color = txDiffuse8.Sample(samPoint, gs_out.tex);  break;
+		case 1:	color = txDiffuse9.Sample(samPoint, gs_out.tex);  break;
+		case 2:	color = txDiffuse10.Sample(samPoint, gs_out.tex); break;
+		case 3:	color = txDiffuse11.Sample(samPoint, gs_out.tex); break;
+		case 4:	color = txDiffuse12.Sample(samPoint, gs_out.tex); break;
+		case 5:	color = txDiffuse13.Sample(samPoint, gs_out.tex); break;
+		case 6:	color = txDiffuse14.Sample(samPoint, gs_out.tex); break;
+		case 7:	color = txDiffuse15.Sample(samPoint, gs_out.tex); break;
+		default:	color = float4(1.0f,1.0f,1.0f,1.0f);		  break;
+	}
+	return color * gs_out.color;
 }

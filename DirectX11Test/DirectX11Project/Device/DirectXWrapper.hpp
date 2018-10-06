@@ -587,6 +587,12 @@ namespace Lobelia {
 		struct CBData {
 			DirectX::XMMATRIX view;
 			DirectX::XMMATRIX projection;
+			DirectX::XMMATRIX billboardMat;
+			float pos[4];
+			struct Frustum {
+				DirectX::XMFLOAT4 center[6];
+				DirectX::XMFLOAT4 normal[6];
+			}frustum;
 		};
 	public:
 		//Python用
@@ -597,8 +603,11 @@ namespace Lobelia {
 		void SetUp(float x, float y, float z);
 		void Activate();
 	private:
+		void CreateFrustum();
+	private:
 		static DirectX::XMMATRIX CreateProjection(float fov_rad, float aspect, float near_z, float far_z);
 		static DirectX::XMMATRIX CreateView(const DirectX::XMFLOAT4& pos, const DirectX::XMFLOAT4& at, const DirectX::XMFLOAT4&up);
+		static DirectX::XMMATRIX CreateBillboardMat(const DirectX::XMFLOAT4& pos, const DirectX::XMFLOAT4& at, const DirectX::XMFLOAT4&up);
 	private:
 		std::unique_ptr<ConstantBuffer> constantBuffer;
 		//プロジェクション用
@@ -610,6 +619,7 @@ namespace Lobelia {
 		DirectX::XMFLOAT4 pos;
 		DirectX::XMFLOAT4 at;
 		DirectX::XMFLOAT4 up;
+		CBData::Frustum frustum;
 	};
 	//----------------------------------------End Viewport------------------------------------------
 	//--------------------------------------------------------------------------------------------------

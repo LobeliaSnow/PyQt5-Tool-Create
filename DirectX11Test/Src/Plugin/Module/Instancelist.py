@@ -40,7 +40,7 @@ class ParticleInstance(QtWidgets.QListWidgetItem):
         self.randMove = [0.0, 0.0, 0.0]
         self.randPower = [0.0, 0.0, 0.0]
         self.randColor = [0.0, 0.0, 0.0]
-        
+
 
 class InstanceList(QtWidgets.QListWidget):
     def __init__(self, *args, **kwargs):
@@ -81,14 +81,19 @@ class InstanceList(QtWidgets.QListWidget):
         self.parent.ui.spinUVSizeX.setValue(item.particleParameter.uvSizeX)
         self.parent.ui.spinUVSizeY.setValue(item.particleParameter.uvSizeY)
         self.parent.ui.spinColorRed.setValue(item.particleParameter.colorRed)
-        self.parent.ui.spinColorGreen.setValue(item.particleParameter.colorGreen)
+        self.parent.ui.spinColorGreen.setValue(
+            item.particleParameter.colorGreen)
         self.parent.ui.spinColorBlue.setValue(item.particleParameter.colorBlue)
         self.parent.ui.spinAliveTime.setValue(item.particleParameter.aliveTime)
-        self.parent.ui.spinFadeInTime.setValue(item.particleParameter.fadeInTime)
-        self.parent.ui.spinFadeOutTime.setValue(item.particleParameter.fadeOutTime)
-        self.parent.ui.spinStartScale.setValue(item.particleParameter.startScale)
+        self.parent.ui.spinFadeInTime.setValue(
+            item.particleParameter.fadeInTime)
+        self.parent.ui.spinFadeOutTime.setValue(
+            item.particleParameter.fadeOutTime)
+        self.parent.ui.spinStartScale.setValue(
+            item.particleParameter.startScale)
         self.parent.ui.spinStartScale.setValue(item.particleParameter.endScale)
-        self.parent.ui.spinTextureIndex.setValue(item.particleParameter.textureIndex)
+        self.parent.ui.spinTextureIndex.setValue(
+            item.particleParameter.textureIndex)
 
     def UpdateGenerateParameters(self, item):
         item.generateCount = self.parent.ui.spinGenerateFrame.value()
@@ -121,18 +126,22 @@ class InstanceList(QtWidgets.QListWidget):
         item.particleParameter.colorGreen = self.parent.ui.spinColorGreen.value()
         item.particleParameter.colorBlue = self.parent.ui.spinColorBlue.value()
         item.particleParameter.aliveTime = self.parent.ui.spinAliveTime.value()
+        item.particleParameter.elapsedTime = self.parent.ui.spinAliveTime.value()
         item.particleParameter.fadeInTime = self.parent.ui.spinFadeInTime.value()
         item.particleParameter.fadeOutTime = self.parent.ui.spinFadeOutTime.value()
         item.particleParameter.startScale = self.parent.ui.spinStartScale.value()
-        item.particleParameter.endScale = self.parent.ui.spinStartScale.value()
+        item.particleParameter.endScale = self.parent.ui.spinEndScale.value()
         item.particleParameter.textureIndex = self.parent.ui.spinTextureIndex.value()
+        item.particleParameter.colorRed = self.parent.colorRed
+        item.particleParameter.colorGreen = self.parent.colorGreen
+        item.particleParameter.colorBlue = self.parent.colorBlue
         if self.parent.ui.blendCopy.isChecked():
             item.blendMode = DirectX11.ParticleBlendMode.COPY
-        if self.parent.ui.blendAdd.isChecked():
+        elif self.parent.ui.blendAdd.isChecked():
             item.blendMode = DirectX11.ParticleBlendMode.ADD
-        if self.parent.ui.blendSub.isChecked():
+        elif self.parent.ui.blendSub.isChecked():
             item.blendMode = DirectX11.ParticleBlendMode.SUB
-        if self.parent.ui.blendScreen.isChecked():
+        elif self.parent.ui.blendScreen.isChecked():
             item.blendMode = DirectX11.ParticleBlendMode.SCREEN
 
     def ChangeInstance(self, item):
@@ -140,9 +149,10 @@ class InstanceList(QtWidgets.QListWidget):
         self.SetParticleParameters(item)
         self.SetActive(item.text())
 
-    def SetActive(self,instance_name):
+    def SetActive(self, instance_name):
         self.index = self.currentRow()
         self.parent.ui.activeInstance.setText(instance_name)
+
     def SetParentEditor(self, parent):
         self.parent = parent
 
