@@ -33,8 +33,8 @@ class ScriptManager(QWidget):
         self.hide()
 
     def __del__(self):
-        self.SavePathList()
-
+        # self.SavePathList()
+        pass
     def Initialize(self,parent):
         self.parent = parent
         self.Update()
