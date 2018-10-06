@@ -744,16 +744,24 @@ namespace Lobelia {
 	public:
 		//パーティクル一つを定義する構造体
 		struct Particle {
-			std::array<float, 3> pos;
+			float posX;
+			float posY;
+			float posZ;
 			//移動量
-			std::array<float, 3> move;
+			float moveX;
+			float moveY;
+			float moveZ;
 			//加速度 (メートル毎秒毎秒)
-			std::array<float, 3>  power;
+			float powerX;
+			float powerY;
+			float powerZ;
 			//使用するテクスチャの番号
 			int textureIndex;
 			//0.0f~1.0f
-			std::array<float, 2>  uvPos;
-			std::array<float, 2>  uvSize;
+			float uvPosX;
+			float uvPosY;
+			float uvSizeX;
+			float uvSizeY;
 			//生存時間
 			float aliveTime;
 			//経過時間
@@ -771,7 +779,9 @@ namespace Lobelia {
 			//終了時の回転角
 			float endRad;
 			//補正色
-			std::array<float, 3> color;
+			float colorRed;
+			float colorGreen;
+			float colorBlue;
 			Particle(float pos_x, float pos_y, float pos_z, float move_x, float move_y, float move_z, float power_x, float power_y, float power_z, int texture_index, float uv_pos_x, float uv_pos_y, float uv_size_y, float uv_size_x, float alive_time, float fade_in_time, float fade_out_time, float start_scale, float end_scale, float start_rad, float end_rad, float color_r, float color_g, float color_b);
 			Particle();
 			~Particle();
@@ -780,6 +790,7 @@ namespace Lobelia {
 		GPUParticleSystem();
 		~GPUParticleSystem();
 		void LoadTexture(int slot, std::string& file_path);
+		float GetElapsedTime();
 		void Append(const Particle& particle);
 		//何倍速にするかの決定
 		void Update(float time_scale = 1.0f);

@@ -99,7 +99,10 @@ def main():
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    sys.exit(app.exec_())
-
+    try:
+        sys.exit(app.exec_())
+    except:
+        return
+        
 if __name__ == '__main__':
     main()

@@ -1,48 +1,41 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-import Plugin.Module.ParticleConsole
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
+from PyQt5 import QtGui
+import Plugin.Module.ParticleEditorWindow
 import directxwidget
 import DirectX11
 import ScriptModule
+import sys
+import random
 
 # テクスチャのプレビューウインドウも付けたい
 
 # パーティクルシステムのパラメーター用インスタンス
 # 値のコピーとインスタンスの削除ができるように
+# 回転のパラメーター忘れてる
+
+# パーティクルコンソールのuiファイルから生成されたpyファイルの
+# 一番下のimportを以下のように変更すること
+# from Plugin.Module.Instancelist import InstanceList
 
 
-class ParticleInstance(QtCore.QAbstractListModel):
-    def __init__(self, parent):
-        super(ParticleInstance, self).__init__(parent)
-        #パーティクルパラメーター
-        self.particleParameter = DirectX11.GPUParticle()
-        #内部用
-        self.particleParameter.elapsedTime = 0.0
-        #生成用パラメーター
-        self.generateCount = 0
-        self.sectionTime = 0.0
-        self.blendMode = DirectX11.BlendMode.COPY
-        self.randPos = [0.0,0.0,0.0]
-        self.randMove = [0.0,0.0,0.0]
-        self.randPower = [0.0,0.0,0.0]
-        self.randColor = [0.0,0.0,0.0]
-
-class ParticleEditor(directxwidget.DirectXObject, QtWidgets.QWidget):
+class ParticleEditor(directxwidget.DirectXObject, QtWidgets.QMainWindow):
     windowMenu = None
+
     def __init__(self, parent):
         super(ParticleEditor, self).__init__(parent)
-        self.ui = Plugin.Module.ParticleConsole.Ui_Form()
+        self.ui = Plugin.Module.ParticleEditorWindow.Ui_ParticleEditor()
         self.ui.setupUi(self)
-        self.setWindowFlags(Qt.Window)
-        self.particleSystemCopy = DirectX11.GPUParticleSystem()
-        self.particleSystemAdd = DirectX11.GPUParticleSystem()
-        self.particleSystemSub = DirectX11.GPUParticleSystem()
-        self.particleSystemScreen = DirectX11.GPUParticleSystem()
+        self.setWindowFlags(QtCore.Qt.Window)
+        self.particleSystem = []
+        for i in range(4):
+            self.particleSystem += [DirectX11.GPUParticleSystem()]
         self.Connect()
         # 現在読み込まれるテクスチャスロット
         self.nowTextureSlot = -1
+        self.ui.instanceListWidget.SetParentEditor(self)
+        self.DeactivateWidget()
+        self.active = False
 
     def Connect(self):
         self.ui.openTexture0.clicked.connect(self.OpenTexture0)
@@ -53,88 +46,124 @@ class ParticleEditor(directxwidget.DirectXObject, QtWidgets.QWidget):
         self.ui.openTexture5.clicked.connect(self.OpenTexture5)
         self.ui.openTexture6.clicked.connect(self.OpenTexture6)
         self.ui.openTexture7.clicked.connect(self.OpenTexture7)
-    # テクスチャ読み込み
 
+    def DeactivateWidget(self):
+        self.ui.generateParameters.setDisabled(True)
+        self.ui.particleParameters.setDisabled(True)
+        self.active = False
+
+    def ActivateWidget(self):
+        self.ui.generateParameters.setEnabled(True)
+        self.ui.particleParameters.setEnabled(True)
+        self.active = True
+
+    # 入力値のリセット
+    def ResetGeneratorParameters(self):
+        self.ui.spinGenerateFrame.setValue(0)
+        self.ui.spinSectionTime.setValue(0.0)
+        self.ui.spinRandPosX.setValue(0.0)
+        self.ui.spinRandPosY.setValue(0.0)
+        self.ui.spinRandPosZ.setValue(0.0)
+        self.ui.spinRandMoveX.setValue(0.0)
+        self.ui.spinRandMoveY.setValue(0.0)
+        self.ui.spinRandMoveZ.setValue(0.0)
+        self.ui.spinRandPowerX.setValue(0.0)
+        self.ui.spinRandPowerY.setValue(0.0)
+        self.ui.spinRandPowerZ.setValue(0.0)
+        self.ui.spinRandColorRed.setValue(0.0)
+        self.ui.spinRandColorGreen.setValue(0.0)
+        self.ui.spinRandColorBlue.setValue(0.0)
+
+    def ResetParticleParameters(self):
+        self.ui.spinPosX.setValue(0.0)
+        self.ui.spinPosY.setValue(0.0)
+        self.ui.spinPosZ.setValue(0.0)
+        self.ui.spinMoveX.setValue(0.0)
+        self.ui.spinMoveY.setValue(0.0)
+        self.ui.spinMoveZ.setValue(0.0)
+        self.ui.spinUVPosX.setValue(0.0)
+        self.ui.spinUVPosY.setValue(0.0)
+        self.ui.spinUVSizeX.setValue(0.0)
+        self.ui.spinUVSizeY.setValue(0.0)
+        self.ui.spinColorRed.setValue(1.0)
+        self.ui.spinColorGreen.setValue(1.0)
+        self.ui.spinColorBlue.setValue(1.0)
+        self.ui.spinAliveTime.setValue(0.0)
+        self.ui.spinFadeInTime.setValue(0.0)
+        self.ui.spinFadeOutTime.setValue(0.0)
+        self.ui.spinStartScale.setValue(0.0)
+        self.ui.spinEndScale.setValue(0.0)
+        self.ui.spinTextureIndex.setValue(-1)
+
+    def ResetParameters(self):
+        self.ResetGeneratorParameters()
+        self.ResetParticleParameters()
+        self.ui.blendCopy.setChecked(True)
+
+    # テクスチャ読み込み
     def OpenTexture0(self):
         path = ScriptModule.OpenFileDialog(self)
         if path[0] == "":
             return
-        self.particleSystemCopy.LoadTexture(0, path[0])
-        self.particleSystemAdd.LoadTexture(0, path[0])
-        self.particleSystemSub.LoadTexture(0, path[0])
-        self.particleSystemScreen.LoadTexture(0, path[0])
+        for system in self.particleSystem:
+            system.LoadTexture(0, path[0])
         self.ui.pathView0.setText(path[0])
 
     def OpenTexture1(self):
         path = ScriptModule.OpenFileDialog(self)
         if path[0] == "":
             return
-        self.particleSystemCopy.LoadTexture(1, path[0])
-        self.particleSystemAdd.LoadTexture(1, path[0])
-        self.particleSystemSub.LoadTexture(1, path[0])
-        self.particleSystemScreen.LoadTexture(1, path[0])
+        for system in self.particleSystem:
+            system.LoadTexture(1, path[0])
         self.ui.pathView1.setText(path[0])
 
     def OpenTexture2(self):
         path = ScriptModule.OpenFileDialog(self)
         if path[0] == "":
             return
-        self.particleSystemCopy.LoadTexture(2, path[0])
-        self.particleSystemAdd.LoadTexture(2, path[0])
-        self.particleSystemSub.LoadTexture(2, path[0])
-        self.particleSystemScreen.LoadTexture(2, path[0])
+        for system in self.particleSystem:
+            system.LoadTexture(2, path[0])
         self.ui.pathView2.setText(path[0])
 
     def OpenTexture3(self):
         path = ScriptModule.OpenFileDialog(self)
         if path[0] == "":
             return
-        self.particleSystemCopy.LoadTexture(3, path[0])
-        self.particleSystemAdd.LoadTexture(3, path[0])
-        self.particleSystemSub.LoadTexture(3, path[0])
-        self.particleSystemScreen.LoadTexture(3, path[0])
+        for system in self.particleSystem:
+            system.LoadTexture(3, path[0])
         self.ui.pathView3.setText(path[0])
 
     def OpenTexture4(self):
         path = ScriptModule.OpenFileDialog(self)
         if path[0] == "":
             return
-        self.particleSystemCopy.LoadTexture(4, path[0])
-        self.particleSystemAdd.LoadTexture(4, path[0])
-        self.particleSystemSub.LoadTexture(4, path[0])
-        self.particleSystemScreen.LoadTexture(4, path[0])
+        for system in self.particleSystem:
+            system.LoadTexture(4, path[0])
         self.ui.pathView4.setText(path[0])
 
     def OpenTexture5(self):
         path = ScriptModule.OpenFileDialog(self)
         if path[0] == "":
             return
-        self.particleSystemCopy.LoadTexture(5, path[0])
-        self.particleSystemAdd.LoadTexture(5, path[0])
-        self.particleSystemSub.LoadTexture(5, path[0])
-        self.particleSystemScreen.LoadTexture(5, path[0])
+        for system in self.particleSystem:
+            system.LoadTexture(5, path[0])
         self.ui.pathView5.setText(path[0])
 
     def OpenTexture6(self):
         path = ScriptModule.OpenFileDialog(self)
         if path[0] == "":
             return
-        self.particleSystemCopy.LoadTexture(6, path[0])
-        self.particleSystemAdd.LoadTexture(6, path[0])
-        self.particleSystemSub.LoadTexture(6, path[0])
-        self.particleSystemScreen.LoadTexture(6, path[0])
+        for system in self.particleSystem:
+            system.LoadTexture(6, path[0])
         self.ui.pathView6.setText(path[0])
 
     def OpenTexture7(self):
         path = ScriptModule.OpenFileDialog(self)
         if path[0] == "":
             return
-        self.particleSystemCopy.LoadTexture(7, path[0])
-        self.particleSystemAdd.LoadTexture(7, path[0])
-        self.particleSystemSub.LoadTexture(7, path[0])
-        self.particleSystemScreen.LoadTexture(7, path[0])
+        for system in self.particleSystem:
+            system.LoadTexture(7, path[0])
         self.ui.pathView7.setText(path[0])
-     #
 
     def RegisterMenuAction(self, parent):
         action = QtWidgets.QAction(parent)
@@ -147,14 +176,46 @@ class ParticleEditor(directxwidget.DirectXObject, QtWidgets.QWidget):
         parent.ui.menubar.addAction(ParticleEditor.windowMenu.menuAction())
 
     def Show(self):
-        self.setWindowState(Qt.WindowActive)
+        self.setWindowState(QtCore.Qt.WindowActive)
         self.show()
 
+    def SetParticles(self):
+        #各経過時間
+        for i in range(self.ui.instanceListWidget.count()):
+            instance = self.ui.instanceListWidget.item(i)
+            instance.elapsedTime += self.particleSystem[int(instance.blendMode)].GetElapsedTime()
+            for generate in range(instance.generateCount):
+                #ベースを入れる
+                particle = instance.particleParameter
+                #ランダム要素反映
+                particle.posX += random.uniform(-instance.randPos[0],instance.randPos[0])
+                particle.posY += random.uniform(-instance.randPos[1],instance.randPos[1])
+                particle.posZ += random.uniform(-instance.randPos[2],instance.randPos[2])
+                particle.moveX += random.uniform(-instance.randMove[0],instance.randMove[0])
+                particle.moveY += random.uniform(-instance.randMove[1],instance.randMove[1])
+                particle.moveZ += random.uniform(-instance.randMove[2],instance.randMove[2])
+                particle.powerX += random.uniform(-instance.randPower[0],instance.randPower[0])
+                particle.powerY += random.uniform(-instance.randPower[1],instance.randPower[1])
+                particle.powerZ += random.uniform(-instance.randPower[2],instance.randPower[2])
+                particle.colorRed += random.uniform(-instance.randColor[0],instance.randColor[0])
+                particle.colorGreen += random.uniform(-instance.randColor[1],instance.randColor[1])
+                particle.colorBlue += random.uniform(-instance.randColor[2],instance.randColor[2])
+                # self.particleSystem[int(instance.blendMode)].Append(particle)
+                self.particleSystem[0].Append(particle)
+
     def Update(self):
-        pass
+        if not self.active and self.ui.instanceListWidget.count() != 0:
+            self.ActivateWidget()
+        self.ui.instanceListWidget.Update()
+        self.SetParticles()
+        for system in self.particleSystem:
+            system.Update(1.0)
 
     def Render(self):
-        pass
+        index = 0
+        for system in self.particleSystem:
+            system.Render(DirectX11.ParticleBlendMode(index))
+            index += 1
 
 
 def Initialize(parent):
@@ -162,3 +223,6 @@ def Initialize(parent):
         return
     editor = ParticleEditor(parent)
     editor.RegisterMenuAction(parent)
+    directxwidget.DirectXWidget.objectList += [editor]
+    # デバッグ用
+    editor.Show()

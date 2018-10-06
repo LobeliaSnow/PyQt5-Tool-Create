@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\Users\2160149\Desktop\PyQt5\DirectX11Test\Src\Plugin\Module\ParticleConsole.ui'
+# Form implementation generated from reading ui file 'C:\Users\black\Desktop\PyQt5-Tool-Create\DirectX11Test\Src\Plugin\Module\ParticleConsole.ui'
 #
-# Created by: PyQt5 UI code generator 5.10.1
+# Created by: PyQt5 UI code generator 5.11.3
 #
 # WARNING! All changes made in this file will be lost!
 
@@ -248,9 +248,9 @@ class Ui_Form(object):
         self.pushButton_10 = QtWidgets.QPushButton(self.instanceList)
         self.pushButton_10.setObjectName("pushButton_10")
         self.gridLayout_13.addWidget(self.pushButton_10, 1, 0, 1, 1)
-        self.listView = QtWidgets.QListView(self.instanceList)
-        self.listView.setObjectName("listView")
-        self.gridLayout_13.addWidget(self.listView, 0, 0, 1, 1)
+        self.instanceListWidget = InstanceList(self.instanceList)
+        self.instanceListWidget.setObjectName("instanceListWidget")
+        self.gridLayout_13.addWidget(self.instanceListWidget, 0, 0, 1, 1)
         self.gridLayout.addWidget(self.instanceList, 0, 2, 1, 1)
         self.generateParameters = QtWidgets.QGroupBox(Form)
         self.generateParameters.setObjectName("generateParameters")
@@ -642,3 +642,4 @@ class Ui_Form(object):
         self.label_48.setText(_translate("Form", "slot 7"))
         self.openTexture7.setText(_translate("Form", "open texture"))
 
+from Plugin.Module.instancelist import InstanceList

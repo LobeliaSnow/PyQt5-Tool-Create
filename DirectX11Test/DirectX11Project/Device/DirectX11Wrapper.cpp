@@ -1295,7 +1295,8 @@ namespace Lobelia {
 	//	GPUParticle::Particle
 	//----------------------------------------------------------------------------------------------------
 	GPUParticleSystem::Particle::Particle(float pos_x, float pos_y, float pos_z, float move_x, float move_y, float move_z, float power_x, float power_y, float power_z, int texture_index, float uv_pos_x, float uv_pos_y, float uv_size_y, float uv_size_x, float alive_time, float fade_in_time, float fade_out_time, float start_scale, float end_scale, float start_rad, float end_rad, float color_r, float color_g, float color_b) :
-		pos{ pos_x, pos_y, pos_z }, move{ move_x,move_y,move_z }, power{ power_x,power_y,power_z }, textureIndex(texture_index), uvPos{ uv_pos_x,uv_pos_y }, uvSize{ uv_size_x,uv_size_y }, aliveTime(alive_time), elapsedTime(alive_time), fadeInTime(fade_in_time), fadeOutTime(fade_out_time), startScale(start_scale), endScale(end_scale), startRad(start_rad), endRad(end_rad), color{ color_r, color_g, color_b } {}
+		posX(pos_x), posY(pos_y), posZ(pos_z), moveX(move_x), moveY(move_y), moveZ(move_z), powerX(power_x), powerY(power_y), powerZ(power_z), textureIndex(texture_index), uvPosX(uv_pos_x), uvPosY(uv_pos_y), uvSizeX(uv_size_x), uvSizeY(uv_size_y),
+		aliveTime(alive_time), elapsedTime(alive_time), fadeInTime(fade_in_time), fadeOutTime(fade_out_time), startScale(start_scale), endScale(end_scale), startRad(start_rad), endRad(end_rad), colorRed(color_r), colorGreen(color_g), colorBlue(color_b) {}
 	GPUParticleSystem::Particle::Particle() : Particle(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f) {	}
 	GPUParticleSystem::Particle::~Particle() = default;
 	//----------------------------------------------------------------------------------------------------
@@ -1354,6 +1355,7 @@ namespace Lobelia {
 		if (slot >= TEXTURE_COUNT)Error::Message(ErrorCode::DXE90002);
 		textureList[slot] = TextureManager::Load(file_path.c_str(), true);
 	}
+	float GPUParticleSystem::GetElapsedTime() { return timer->GetSecondResult(); }
 	void GPUParticleSystem::Append(const Particle& particle) {
 		if (info.appendCount >= APPEND_PARTICLE_MAX) Error::Message(ErrorCode::DXE90002);
 		appendParticles[info.appendCount++] = particle;
