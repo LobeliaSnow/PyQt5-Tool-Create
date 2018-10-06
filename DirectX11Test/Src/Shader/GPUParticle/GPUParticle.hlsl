@@ -268,7 +268,7 @@ void GPUParticleGS(point GS_IN gs_in[1], inout TriangleStream<GS_OUT> triangle_s
 	//進行率
 	float nowRate = 1.0f - gs_in[0].elapsedTime / gs_in[0].aliveTime;
 	float scale = lerp(gs_in[0].startScale, gs_in[0].endScale, nowRate);
-	if (!IsFrustumRange(gs_in[0].pos, sqrt(scale*scale * 2)))return;
+	// if (!IsFrustumRange(gs_in[0].pos, sqrt(scale*scale * 2)))return;
 	float angle = lerp(gs_in[0].startRad, gs_in[0].endRad, nowRate);
 	float invElapsedTime = gs_in[0].aliveTime - gs_in[0].elapsedTime;
 	float alpha = 1.0f;

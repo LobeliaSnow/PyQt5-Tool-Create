@@ -305,6 +305,7 @@ PYBIND11_MODULE(DirectX11, m) {
 	//	.def("Render", &Polygon3DRenderer::Render)
 	py::class_<GPUParticleSystem::Particle>(m, "GPUParticle")
 		.def(py::init<float, float, float, float, float, float, float, float, float, int, float, float, float, float, float, float, float, float, float, float, float, float, float, float>())
+		.def(py::init<GPUParticleSystem::Particle>())
 		.def(py::init())
 		.def_readwrite("posX", &GPUParticleSystem::Particle::posX)
 		.def_readwrite("posY", &GPUParticleSystem::Particle::posY)

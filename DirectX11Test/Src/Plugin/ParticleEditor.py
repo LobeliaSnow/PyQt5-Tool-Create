@@ -7,12 +7,15 @@ import DirectX11
 import ScriptModule
 import sys
 import random
+import copy
 
 # テクスチャのプレビューウインドウも付けたい
 
 # パーティクルシステムのパラメーター用インスタンス
-# 値のコピーとインスタンスの削除ができるように
+# 値のコピーができるように
 # 回転のパラメーター忘れてる
+
+#現状インスタンスを移動してから戻るとなぜか消える
 
 # パーティクルコンソールのuiファイルから生成されたpyファイルの
 # 一番下のimportを以下のように変更すること
@@ -54,6 +57,7 @@ class ParticleEditor(directxwidget.DirectXObject, QtWidgets.QMainWindow):
     def DeactivateWidget(self):
         self.ui.generateParameters.setDisabled(True)
         self.ui.particleParameters.setDisabled(True)
+        self.ui.activeInstance.setText("")
         self.active = False
 
     def ActivateWidget(self):
@@ -97,6 +101,7 @@ class ParticleEditor(directxwidget.DirectXObject, QtWidgets.QMainWindow):
         self.ui.colorRed = 1.0
         self.ui.colorGreen = 1.0
         self.ui.colorBlue = 1.0
+
     def ResetParameters(self):
         self.ResetGeneratorParameters()
         self.ResetParticleParameters()
@@ -186,16 +191,15 @@ class ParticleEditor(directxwidget.DirectXObject, QtWidgets.QMainWindow):
     def Show(self):
         self.setWindowState(QtCore.Qt.WindowActive)
         self.show()
-
     def SetParticles(self):
         # 各経過時間
         for i in range(self.ui.instanceListWidget.count()):
             instance = self.ui.instanceListWidget.item(i)
-            instance.elapsedTime += self.particleSystem[int(
-                instance.blendMode)].GetElapsedTime()
+            instance.elapsedTime += self.particleSystem[int(instance.blendMode)].GetElapsedTime()
             for generate in range(instance.generateCount):
                 # ベースを入れる
-                particle = instance.particleParameter
+                particle = DirectX11.GPUParticle(instance.particleParameter)
+                # particle = instance.particleParameter
                 particle.aliveTime = particle.elapsedTime
                 # ランダム要素反映
                 particle.posX += random.uniform(-instance.randPos[0],instance.randPos[0])
@@ -217,10 +221,12 @@ class ParticleEditor(directxwidget.DirectXObject, QtWidgets.QMainWindow):
                 if particle.colorBlue > 1.0:
                     particle.colorBlue = 1.0
                 self.particleSystem[int(instance.blendMode)].Append(particle)
-
     def Update(self):
-        if not self.active and self.ui.instanceListWidget.count() != 0:
-            self.ActivateWidget()
+        if self.ui.instanceListWidget.count() > 0:
+            if not self.active:
+                self.ActivateWidget()
+        else:
+            self.DeactivateWidget()
         self.ui.instanceListWidget.Update()
         self.SetParticles()
         for system in self.particleSystem:

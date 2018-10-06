@@ -793,6 +793,7 @@ namespace Lobelia {
 			float colorGreen;
 			float colorBlue;
 			Particle(float pos_x, float pos_y, float pos_z, float move_x, float move_y, float move_z, float power_x, float power_y, float power_z, int texture_index, float uv_pos_x, float uv_pos_y, float uv_size_y, float uv_size_x, float alive_time, float fade_in_time, float fade_out_time, float start_scale, float end_scale, float start_rad, float end_rad, float color_r, float color_g, float color_b);
+			Particle(const Particle& instance);
 			Particle();
 			~Particle();
 		};

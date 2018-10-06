@@ -840,10 +840,10 @@ namespace Lobelia {
 		"	column_major float4x4 projection;\n"
 		"	column_major float4x4 billboardMat;\n"
 		"	float4 cpos;\n"
-		"struct Frustum{\n"
-		"	float4 center[6];\n"
-		"	float4 normal[6];\n"
-		"} frustum;\n"
+		"	struct Frustum{\n"
+		"		float4 center[6];\n"
+		"		float4 normal[6];\n"
+		"	} frustum;\n"
 		"};\n"
 		"cbuffer Model : register(b1) {\n"
 		"	float4x4 world;\n"
@@ -1373,6 +1373,10 @@ namespace Lobelia {
 		posX(pos_x), posY(pos_y), posZ(pos_z), moveX(move_x), moveY(move_y), moveZ(move_z), powerX(power_x), powerY(power_y), powerZ(power_z), textureIndex(texture_index), uvPosX(uv_pos_x), uvPosY(uv_pos_y), uvSizeX(uv_size_x), uvSizeY(uv_size_y),
 		aliveTime(alive_time), elapsedTime(alive_time), fadeInTime(fade_in_time), fadeOutTime(fade_out_time), startScale(start_scale), endScale(end_scale), startRad(start_rad), endRad(end_rad), colorRed(color_r), colorGreen(color_g), colorBlue(color_b) {}
 	GPUParticleSystem::Particle::Particle() : Particle(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -1, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f) {	}
+	GPUParticleSystem::Particle::Particle(const Particle& instance) : Particle(instance.posX, instance.posY, instance.posZ, instance.moveX, instance.moveY, instance.moveZ, instance.powerX, instance.powerY, instance.powerZ, instance.textureIndex, instance.uvPosX, instance.uvPosY,
+		instance.uvSizeX, instance.uvSizeY, instance.aliveTime, instance.fadeInTime, instance.fadeOutTime, instance.startScale, instance.endScale, instance.startRad, instance.endRad, instance.colorRed, instance.colorGreen, instance.colorBlue) {
+
+	}
 	GPUParticleSystem::Particle::~Particle() = default;
 	//----------------------------------------------------------------------------------------------------
 	//----------------------------------------------------------------------------------------------------

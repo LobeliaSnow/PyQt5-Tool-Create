@@ -11,17 +11,17 @@ class EnterName(QtWidgets.QDialog):
         self.ui = Ui_EnterNameDialog()
         self.ui.setupUi(self)
         self.ui.pushButton.clicked.connect(self.Close)
-
+        self.ret = ""
     def Close(self):
-        ret = str(self.ui.lineEdit.text())
-        if ret == "":
+        self.ret = str(self.ui.lineEdit.text())
+        if self.ret == "":
             return
         self.close()
 
     def Exec(self):
+        self.ui.lineEdit.setText("")
         self.exec()
-        ret = str(self.ui.lineEdit.text())
-        return ret
+        return self.ret
 
 
 class ParticleInstance(QtWidgets.QListWidgetItem):
@@ -41,6 +41,18 @@ class ParticleInstance(QtWidgets.QListWidgetItem):
         self.randPower = [0.0, 0.0, 0.0]
         self.randColor = [0.0, 0.0, 0.0]
 
+class ParticleValue:
+    def __init__(self,instance):
+        # パーティクルパラメーター
+        self.particleParameter = instance.particleParameter
+        # 生成用パラメーター
+        self.generateCount = instance.generateCount
+        self.sectionTime = instance.sectionTime
+        self.blendMode = instance.blendMode 
+        self.randPos = instance.randPos
+        self.randMove = instance.randMove
+        self.randPower = instance.randPower
+        self.randColor = instance.randColor
 
 class InstanceList(QtWidgets.QListWidget):
     def __init__(self, *args, **kwargs):
@@ -52,6 +64,23 @@ class InstanceList(QtWidgets.QListWidget):
         self.enterName = EnterName(self)
         self.itemDoubleClicked.connect(self.ChangeInstance)
         self.index = 0
+        self.copy = None
+        self.copyValue = None
+        self.pasteValue = None
+        self.resetValue = None
+
+    def keyPressEvent(self, event):
+        if event.key() == QtCore.Qt.Key_Delete:
+            if self.index <= self.currentRow():
+                index = self.index - 1
+                if index < 0:
+                    index = 0
+            self.takeItem(self.currentRow())
+            if self.count() == 0:
+                self.parent.ResetParameters()
+                return
+            self.ChangeInstance(self.item(index))
+            self.setCurrentRow(index)
 
     def SetGenerateParameters(self, item):
         self.parent.ui.spinGenerateFrame.setValue(item.generateCount)
@@ -80,10 +109,6 @@ class InstanceList(QtWidgets.QListWidget):
         self.parent.ui.spinUVPosY.setValue(item.particleParameter.uvPosY)
         self.parent.ui.spinUVSizeX.setValue(item.particleParameter.uvSizeX)
         self.parent.ui.spinUVSizeY.setValue(item.particleParameter.uvSizeY)
-        self.parent.ui.spinColorRed.setValue(item.particleParameter.colorRed)
-        self.parent.ui.spinColorGreen.setValue(
-            item.particleParameter.colorGreen)
-        self.parent.ui.spinColorBlue.setValue(item.particleParameter.colorBlue)
         self.parent.ui.spinAliveTime.setValue(item.particleParameter.aliveTime)
         self.parent.ui.spinFadeInTime.setValue(
             item.particleParameter.fadeInTime)
@@ -122,9 +147,6 @@ class InstanceList(QtWidgets.QListWidget):
         item.particleParameter.uvPosY = self.parent.ui.spinUVPosY.value()
         item.particleParameter.uvSizeX = self.parent.ui.spinUVSizeX.value()
         item.particleParameter.uvSizeY = self.parent.ui.spinUVSizeY.value()
-        item.particleParameter.colorRed = self.parent.ui.spinColorRed.value()
-        item.particleParameter.colorGreen = self.parent.ui.spinColorGreen.value()
-        item.particleParameter.colorBlue = self.parent.ui.spinColorBlue.value()
         item.particleParameter.aliveTime = self.parent.ui.spinAliveTime.value()
         item.particleParameter.elapsedTime = self.parent.ui.spinAliveTime.value()
         item.particleParameter.fadeInTime = self.parent.ui.spinFadeInTime.value()
@@ -158,9 +180,21 @@ class InstanceList(QtWidgets.QListWidget):
 
     def ContextMenu(self, point):
         menu = QtWidgets.QMenu(self)
-        action = QtWidgets.QAction("Add Instance", self)
-        action.triggered.connect(self.AddInstance)
-        menu.addAction(action)
+        self.addInstance = QtWidgets.QAction("Add Instance", self)
+        self.addInstance.triggered.connect(self.AddInstance)
+        menu.addAction(self.addInstance)
+        # self.copyValue = QtWidgets.QAction("Copy Value", self)
+        # self.copyValue.triggered.connect(self.CopyValue)
+        # self.copyValue.setDisabled(True)
+        # menu.addAction(self.copyValue)
+        # self.pasteValue = QtWidgets.QAction("Paste Value", self)
+        # self.pasteValue.triggered.connect(self.PasteValue)
+        # self.pasteValue.setDisabled(True)
+        # menu.addAction(self.pasteValue)
+        # self.resetValue = QtWidgets.QAction("Reset Value", self)
+        # self.resetValue.triggered.connect(self.ResetValue)
+        # self.resetValue.setDisabled(True)
+        # menu.addAction(self.resetValue)
         menu.exec_(self.mapToGlobal(point))
 
     def AddInstance(self):
@@ -175,9 +209,61 @@ class InstanceList(QtWidgets.QListWidget):
         # self.model.appendRow(instance)
         self.parent.ResetParameters()
 
+    def CopyValue(self):
+        self.copy = self.currentItem()
+
+    def PasteValue(self):
+        if self.copy == None:
+            return
+        item = self.currentItem()
+        # 内部用
+        item.particleParameter.elapsedTime = self.copy.particleParameter.elapsedTime
+        item.elapsedTime = self.copy.particleParameter.elapsedTime
+        # 生成用パラメーター
+        item.generateCount = self.copy.generateCount
+        item.sectionTime = self.copy.sectionTime
+        item.blendMode = self.copy.blendMode
+        item.randPos = self.copy.randPos
+        item.randMove = self.copy.randMove
+        item.randPower = self.copy.randPower
+        item.randColor = self.copy.randColor
+        self.SetGenerateParameters(item)
+        self.SetParticleParameters(item)
+
+    def ResetValue(self):
+        item = self.currentItem()
+        # パーティクルパラメーター
+        item.particleParameter = DirectX11.GPUParticle()
+        # 内部用
+        item.particleParameter.elapsedTime = 0.0
+        item.elapsedTime = 0.0
+        # 生成用パラメーター
+        item.generateCount = 0
+        item.sectionTime = 0.0
+        item.blendMode = DirectX11.ParticleBlendMode.COPY
+        item.randPos = [0.0, 0.0, 0.0]
+        item.randMove = [0.0, 0.0, 0.0]
+        item.randPower = [0.0, 0.0, 0.0]
+        item.randColor = [0.0, 0.0, 0.0]
+        self.SetGenerateParameters(item)
+        self.SetParticleParameters(item)
+
     def Update(self):
         if self.count() == 0:
+        #     if self.copyValue != None:
+        #         self.copyValue.setDisabled(True)
+        #     if self.pasteValue != None:
+        #         self.pasteValue.setDisabled(True)
+        #     if self.resetValue != None:
+        #         self.resetValue.setDisabled(True)
+        #     self.copy = None
             return
+        # self.copyValue.setEnabled(True)
+        # self.resetValue.setEnabled(True)
+        # if self.copy != None:
+        #     self.pasteValue.setEnabled(True)
+        # else:
+        #     self.pasteValue.setDisabled(True)
         item = self.item(self.index)
         self.UpdateGenerateParameters(item)
         self.UpdateParticleParameters(item)
