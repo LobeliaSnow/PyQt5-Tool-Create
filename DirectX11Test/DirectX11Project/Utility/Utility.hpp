@@ -2,6 +2,25 @@
 #include <shlwapi.h>
 #include <filesystem>
 namespace Lobelia {
+	class Timer {
+	private:
+		LARGE_INTEGER freq;
+		/**@brief フレーム開始時刻*/
+		LARGE_INTEGER firstTime;
+		/**@brief フレーム終了時刻*/
+		LARGE_INTEGER endTime;
+	public:
+		Timer() noexcept { QueryPerformanceFrequency(&freq); }
+		__forceinline ~Timer()noexcept = default;
+		__forceinline void Begin()noexcept { QueryPerformanceCounter(&firstTime); }
+		__forceinline void End()noexcept { QueryPerformanceCounter(&endTime); }
+		__forceinline float GetMilisecondResult()const noexcept {
+			float unit = 1000.0f;	unit /= freq.QuadPart;
+			return static_cast<float>((endTime.QuadPart - firstTime.QuadPart) * unit);
+		}
+		__forceinline float GetSecondResult()const noexcept { return GetMilisecondResult() / 1000.0f; }
+	};
+
 	//C++用
 	template<class T, class Key = std::string> class ResourceBank {
 	public:

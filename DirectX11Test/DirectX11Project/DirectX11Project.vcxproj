@@ -167,6 +167,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CPPDLLHeader.hpp" />
+    <ClInclude Include="Define\Define.hpp" />
     <ClInclude Include="Device\DirectXWrapper.hpp" />
     <ClInclude Include="Enum\CpuAccessFlag.hpp" />
     <ClInclude Include="Enum\Extension.hpp" />
