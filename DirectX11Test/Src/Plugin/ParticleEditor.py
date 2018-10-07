@@ -24,7 +24,6 @@ import copy
 
 class ParticleEditor(directxwidget.DirectXObject, QtWidgets.QMainWindow):
     windowMenu = None
-
     def __init__(self, parent):
         super(ParticleEditor, self).__init__(parent)
         self.ui = Plugin.Module.ParticleEditorWindow.Ui_ParticleEditor()
@@ -69,6 +68,7 @@ class ParticleEditor(directxwidget.DirectXObject, QtWidgets.QMainWindow):
     def ResetGeneratorParameters(self):
         self.ui.spinGenerateFrame.setValue(0)
         self.ui.spinSectionTime.setValue(0.0)
+        self.ui.spinPlayTime.setValue(0.0)
         self.ui.spinRandPosX.setValue(0.0)
         self.ui.spinRandPosY.setValue(0.0)
         self.ui.spinRandPosZ.setValue(0.0)
@@ -97,10 +97,12 @@ class ParticleEditor(directxwidget.DirectXObject, QtWidgets.QMainWindow):
         self.ui.spinFadeOutTime.setValue(0.0)
         self.ui.spinStartScale.setValue(0.0)
         self.ui.spinEndScale.setValue(0.0)
+        self.ui.spinStartRad.setValue(0.0)
+        self.ui.spinEndRad.setValue(0.0)
         self.ui.spinTextureIndex.setValue(-1)
-        self.ui.colorRed = 1.0
-        self.ui.colorGreen = 1.0
-        self.ui.colorBlue = 1.0
+        self.colorRed = 1.0
+        self.colorGreen = 1.0
+        self.colorBlue = 1.0
 
     def ResetParameters(self):
         self.ResetGeneratorParameters()
@@ -108,7 +110,9 @@ class ParticleEditor(directxwidget.DirectXObject, QtWidgets.QMainWindow):
         self.ui.blendCopy.setChecked(True)
 
     def ColorPick(self):
-        color = QtWidgets.QColorDialog.getColor()
+        color = QtWidgets.QColorDialog.getColor(QtGui.QColor(int(self.colorRed*255),int(self.colorGreen*255),int(self.colorBlue*255)),self)
+        if not color.isValid():
+            return
         self.colorRed = color.redF()
         self.colorGreen = color.greenF()
         self.colorBlue = color.blueF()
@@ -195,7 +199,13 @@ class ParticleEditor(directxwidget.DirectXObject, QtWidgets.QMainWindow):
         # 各経過時間
         for i in range(self.ui.instanceListWidget.count()):
             instance = self.ui.instanceListWidget.item(i)
-            instance.elapsedTime += self.particleSystem[int(instance.blendMode)].GetElapsedTime()
+            #単位がちょっと思っているのと違う。とりあえず仮で修正
+            instance.elapsedTime -= self.particleSystem[int(instance.blendMode)].GetElapsedTime()*1000.0
+            #インターバル
+            if instance.elapsedTime < instance.sectionTime:
+                continue
+            #instance.elapsedTime = 0.0
+            instance.elapsedTime -= instance.sectionTime
             for generate in range(instance.generateCount):
                 # ベースを入れる
                 particle = DirectX11.GPUParticle(instance.particleParameter)
@@ -221,12 +231,16 @@ class ParticleEditor(directxwidget.DirectXObject, QtWidgets.QMainWindow):
                 if particle.colorBlue > 1.0:
                     particle.colorBlue = 1.0
                 self.particleSystem[int(instance.blendMode)].Append(particle)
+                
     def Update(self):
         if self.ui.instanceListWidget.count() > 0:
             if not self.active:
                 self.ActivateWidget()
         else:
             self.DeactivateWidget()
+        item = self.ui.instanceListWidget.item(self.ui.instanceListWidget.index)
+        if item != None:
+            self.ui.activeInstance.setText(item.text())
         self.ui.instanceListWidget.Update()
         self.SetParticles()
         for system in self.particleSystem:

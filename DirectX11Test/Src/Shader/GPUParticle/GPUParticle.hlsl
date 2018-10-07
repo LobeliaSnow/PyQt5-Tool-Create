@@ -149,7 +149,6 @@ inline void ConfigureIndirectArgs(uint thread_id, uint data_index[2])
 	deadCount += (uint)(0.0f >= asfloat(particleData.Load(aroundIndex*PARTICLE_DATA_SIZE + PARTICLE_ELAPSED_TIME_OFFSET)));
 	//死亡数が1以上で且、生存パーティクルが存在する時生死の境界
 	if (deadCount >= 1 && deadCount <= 2) {
-		//死亡パーティクル総数 = 自分 - 1 + 3要素の死亡数
 		deadCount = (int)thread_id + (int)deadCount;
 		//境界を発見したので、引数バッファの構築
 		indirectArgs.Store(INDIRECT_ARGS_INDEX_COUNT, asuint(GPU_PARTICLE_MAX - deadCount));

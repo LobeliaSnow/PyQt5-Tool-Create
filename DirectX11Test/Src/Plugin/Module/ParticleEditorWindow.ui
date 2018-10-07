@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>884</width>
-    <height>618</height>
+    <width>855</width>
+    <height>612</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -254,6 +254,13 @@
          </property>
         </widget>
        </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="label_27">
+         <property name="text">
+          <string>list</string>
+         </property>
+        </widget>
+       </item>
        <item row="0" column="0">
         <widget class="QLabel" name="label_2">
          <property name="text">
@@ -263,20 +270,6 @@
        </item>
        <item row="3" column="0" colspan="2">
         <widget class="InstanceList" name="instanceListWidget"/>
-       </item>
-       <item row="7" column="0" colspan="2">
-        <widget class="QPushButton" name="pushButton_10">
-         <property name="text">
-          <string>save</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QLabel" name="label_27">
-         <property name="text">
-          <string>list</string>
-         </property>
-        </widget>
        </item>
       </layout>
      </widget>
@@ -295,10 +288,20 @@
          <property name="text">
           <string>generate count (生成時いくつ生成するか)</string>
          </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
         </widget>
        </item>
        <item row="1" column="1">
-        <widget class="QDoubleSpinBox" name="spinSectionTime"/>
+        <widget class="QDoubleSpinBox" name="spinSectionTime">
+         <property name="maximum">
+          <double>1000.000000000000000</double>
+         </property>
+         <property name="singleStep">
+          <double>0.100000000000000</double>
+         </property>
+        </widget>
        </item>
        <item row="1" column="0">
         <widget class="QLabel" name="label_14">
@@ -306,7 +309,10 @@
           <string>パーティクルを何msごとに出現させるかの設定</string>
          </property>
          <property name="text">
-          <string>section time (何msごとに生成するか)</string>
+          <string>section time (何秒ごとに生成するか sec)</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
@@ -319,6 +325,33 @@
           <string>random</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_8">
+          <item row="5" column="0">
+           <widget class="QPushButton" name="pushButton_2">
+            <property name="text">
+             <string>Pause (予約)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0">
+           <widget class="QPushButton" name="pushButton">
+            <property name="text">
+             <string>Play (予約)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="0">
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
           <item row="3" column="0">
            <widget class="QGroupBox" name="groupBox_11">
             <property name="title">
@@ -388,20 +421,6 @@
             </layout>
            </widget>
           </item>
-          <item row="4" column="0">
-           <widget class="QPushButton" name="pushButton">
-            <property name="text">
-             <string>Play (予約)</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="0">
-           <widget class="QPushButton" name="pushButton_2">
-            <property name="text">
-             <string>Pause (予約)</string>
-            </property>
-           </widget>
-          </item>
           <item row="0" column="0">
            <widget class="QGroupBox" name="groupBox_2">
             <property name="title">
@@ -431,7 +450,7 @@
              <item row="0" column="1">
               <widget class="QDoubleSpinBox" name="spinRandPosX">
                <property name="minimum">
-                <double>-1000.000000000000000</double>
+                <double>0.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>1000.000000000000000</double>
@@ -441,7 +460,7 @@
              <item row="0" column="3">
               <widget class="QDoubleSpinBox" name="spinRandPosY">
                <property name="minimum">
-                <double>-1000.000000000000000</double>
+                <double>0.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>1000.000000000000000</double>
@@ -461,7 +480,7 @@
              <item row="0" column="5">
               <widget class="QDoubleSpinBox" name="spinRandPosZ">
                <property name="minimum">
-                <double>-1000.000000000000000</double>
+                <double>0.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>1000.000000000000000</double>
@@ -500,7 +519,7 @@
              <item row="0" column="3">
               <widget class="QDoubleSpinBox" name="spinRandPowerY">
                <property name="minimum">
-                <double>-1000.000000000000000</double>
+                <double>0.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>1000.000000000000000</double>
@@ -510,7 +529,7 @@
              <item row="0" column="1">
               <widget class="QDoubleSpinBox" name="spinRandPowerX">
                <property name="minimum">
-                <double>-1000.000000000000000</double>
+                <double>0.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>1000.000000000000000</double>
@@ -530,7 +549,7 @@
              <item row="0" column="5">
               <widget class="QDoubleSpinBox" name="spinRandPowerZ">
                <property name="minimum">
-                <double>-1000.000000000000000</double>
+                <double>0.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>1000.000000000000000</double>
@@ -549,7 +568,7 @@
              <item row="0" column="1">
               <widget class="QDoubleSpinBox" name="spinRandMoveX">
                <property name="minimum">
-                <double>-1000.000000000000000</double>
+                <double>0.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>1000.000000000000000</double>
@@ -559,7 +578,7 @@
              <item row="0" column="3">
               <widget class="QDoubleSpinBox" name="spinRandMoveY">
                <property name="minimum">
-                <double>-1000.000000000000000</double>
+                <double>0.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>1000.000000000000000</double>
@@ -599,7 +618,7 @@
              <item row="0" column="5">
               <widget class="QDoubleSpinBox" name="spinRandMoveZ">
                <property name="minimum">
-                <double>-1000.000000000000000</double>
+                <double>0.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>1000.000000000000000</double>
@@ -610,17 +629,11 @@
            </widget>
           </item>
           <item row="6" column="0">
-           <spacer name="verticalSpacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
+           <widget class="QPushButton" name="pushButton_3">
+            <property name="text">
+             <string>Stop (予約)</string>
             </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -668,12 +681,19 @@
        <item row="2" column="0">
         <widget class="QLabel" name="label_29">
          <property name="text">
-          <string>play time (何秒発生するか 予約)</string>
+          <string>play time (何秒発生するか -1で無限 sec)</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
        <item row="2" column="1">
-        <widget class="QDoubleSpinBox" name="spinPlayTime"/>
+        <widget class="QDoubleSpinBox" name="spinPlayTime">
+         <property name="minimum">
+          <double>-1.000000000000000</double>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -690,13 +710,13 @@
        <string>Particle Parameters</string>
       </property>
       <layout class="QGridLayout" name="gridLayout_12">
-       <item row="17" column="1">
+       <item row="18" column="1">
         <widget class="QLabel" name="label_26">
          <property name="whatsThis">
           <string>テクスチャの補正色、テクスチャ無い場合は描画色</string>
          </property>
          <property name="text">
-          <string>color (補正色 現在まだ使用していない)</string>
+          <string>color (補正色)</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -717,7 +737,7 @@
          </property>
         </widget>
        </item>
-       <item row="15" column="2">
+       <item row="16" column="2">
         <widget class="QSpinBox" name="spinTextureIndex">
          <property name="minimum">
           <number>-1</number>
@@ -778,7 +798,7 @@
           <string>生存時間</string>
          </property>
          <property name="text">
-          <string>alive time (生存時間)</string>
+          <string>alive time (生存時間 sec)</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -798,14 +818,14 @@
           <string>フェードインが終わる時間</string>
          </property>
          <property name="text">
-          <string>fade in time (フェードするまで)</string>
+          <string>fade in time (フェードするまで sec)</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
-       <item row="15" column="1">
+       <item row="16" column="1">
         <widget class="QLabel" name="label_7">
          <property name="whatsThis">
           <string>テクスチャのスロットの指定、-1でテクスチャ無し</string>
@@ -818,7 +838,7 @@
          </property>
         </widget>
        </item>
-       <item row="17" column="2">
+       <item row="18" column="2">
         <widget class="QPushButton" name="colorPickerButton">
          <property name="whatsThis">
           <string>カラーピッカーを開きます</string>
@@ -835,7 +855,7 @@
 </string>
          </property>
          <property name="text">
-          <string>fade out time (フェードアウト開始)</string>
+          <string>fade out time (フェードアウト開始 sec)</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -1167,6 +1187,32 @@
          </layout>
         </widget>
        </item>
+       <item row="14" column="1">
+        <widget class="QLabel" name="label_32">
+         <property name="text">
+          <string>start rad (発生時の角度)</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="15" column="1">
+        <widget class="QLabel" name="label_33">
+         <property name="text">
+          <string>end rad (消滅時の角度)</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="14" column="2">
+        <widget class="QDoubleSpinBox" name="spinStartRad"/>
+       </item>
+       <item row="15" column="2">
+        <widget class="QDoubleSpinBox" name="spinEndRad"/>
+       </item>
       </layout>
      </widget>
     </item>
@@ -1177,7 +1223,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>884</width>
+     <width>855</width>
      <height>21</height>
     </rect>
    </property>
@@ -1192,26 +1238,7 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>spinGenerateFrame</tabstop>
-  <tabstop>spinRandPosX</tabstop>
-  <tabstop>spinRandPosY</tabstop>
-  <tabstop>spinRandPosZ</tabstop>
   <tabstop>openTexture0</tabstop>
-  <tabstop>spinRandPowerY</tabstop>
-  <tabstop>spinRandPowerX</tabstop>
-  <tabstop>spinRandPowerZ</tabstop>
-  <tabstop>spinRandMoveX</tabstop>
-  <tabstop>spinRandMoveY</tabstop>
-  <tabstop>spinRandMoveZ</tabstop>
-  <tabstop>spinRandColorRed</tabstop>
-  <tabstop>spinRandColorGreen</tabstop>
-  <tabstop>spinRandColorBlue</tabstop>
-  <tabstop>blendCopy</tabstop>
-  <tabstop>blendAdd</tabstop>
-  <tabstop>blendSub</tabstop>
-  <tabstop>blendScreen</tabstop>
-  <tabstop>pushButton_10</tabstop>
-  <tabstop>instanceListWidget</tabstop>
   <tabstop>pathView0</tabstop>
   <tabstop>openTexture1</tabstop>
   <tabstop>pathView1</tabstop>
@@ -1227,31 +1254,52 @@
   <tabstop>pathView6</tabstop>
   <tabstop>openTexture7</tabstop>
   <tabstop>pathView7</tabstop>
-  <tabstop>spinSectionTime</tabstop>
-  <tabstop>spinEndScale</tabstop>
-  <tabstop>spinStartScale</tabstop>
-  <tabstop>spinTextureIndex</tabstop>
-  <tabstop>spinAliveTime</tabstop>
-  <tabstop>spinPosY</tabstop>
-  <tabstop>spinPosZ</tabstop>
-  <tabstop>spinPosX</tabstop>
-  <tabstop>spinUVSizeX</tabstop>
-  <tabstop>spinUVSizeY</tabstop>
-  <tabstop>spinUVPosX</tabstop>
-  <tabstop>spinUVPosY</tabstop>
-  <tabstop>spinMoveY</tabstop>
-  <tabstop>spinMoveX</tabstop>
-  <tabstop>spinMoveZ</tabstop>
-  <tabstop>spinPowerZ</tabstop>
-  <tabstop>spinPowerY</tabstop>
-  <tabstop>spinPowerX</tabstop>
-  <tabstop>spinFadeOutTime</tabstop>
-  <tabstop>spinFadeInTime</tabstop>
-  <tabstop>colorPickerButton</tabstop>
   <tabstop>activeInstance</tabstop>
+  <tabstop>instanceListWidget</tabstop>
+  <tabstop>spinGenerateFrame</tabstop>
+  <tabstop>spinSectionTime</tabstop>
   <tabstop>spinPlayTime</tabstop>
+  <tabstop>blendCopy</tabstop>
+  <tabstop>blendAdd</tabstop>
+  <tabstop>blendSub</tabstop>
+  <tabstop>blendScreen</tabstop>
+  <tabstop>spinRandPosX</tabstop>
+  <tabstop>spinRandPosY</tabstop>
+  <tabstop>spinRandPosZ</tabstop>
+  <tabstop>spinRandMoveX</tabstop>
+  <tabstop>spinRandMoveY</tabstop>
+  <tabstop>spinRandMoveZ</tabstop>
+  <tabstop>spinRandPowerX</tabstop>
+  <tabstop>spinRandPowerY</tabstop>
+  <tabstop>spinRandPowerZ</tabstop>
+  <tabstop>spinRandColorRed</tabstop>
+  <tabstop>spinRandColorGreen</tabstop>
+  <tabstop>spinRandColorBlue</tabstop>
   <tabstop>pushButton</tabstop>
   <tabstop>pushButton_2</tabstop>
+  <tabstop>pushButton_3</tabstop>
+  <tabstop>spinPosX</tabstop>
+  <tabstop>spinPosY</tabstop>
+  <tabstop>spinPosZ</tabstop>
+  <tabstop>spinMoveX</tabstop>
+  <tabstop>spinMoveY</tabstop>
+  <tabstop>spinMoveZ</tabstop>
+  <tabstop>spinPowerX</tabstop>
+  <tabstop>spinPowerY</tabstop>
+  <tabstop>spinPowerZ</tabstop>
+  <tabstop>spinUVPosX</tabstop>
+  <tabstop>spinUVPosY</tabstop>
+  <tabstop>spinUVSizeX</tabstop>
+  <tabstop>spinUVSizeY</tabstop>
+  <tabstop>spinAliveTime</tabstop>
+  <tabstop>spinFadeInTime</tabstop>
+  <tabstop>spinFadeOutTime</tabstop>
+  <tabstop>spinStartScale</tabstop>
+  <tabstop>spinEndScale</tabstop>
+  <tabstop>spinStartRad</tabstop>
+  <tabstop>spinEndRad</tabstop>
+  <tabstop>spinTextureIndex</tabstop>
+  <tabstop>colorPickerButton</tabstop>
  </tabstops>
  <resources/>
  <connections/>
