@@ -34,6 +34,7 @@ class DirectXWidget(QOpenGLWidget):
         self.timerId = self.startTimer(16)
         self.socket = None
         self.client = None
+        self.clength = 50.0
     # def GetRendere(self):
     #     return self.renderer
 
@@ -84,26 +85,34 @@ class DirectXWidget(QOpenGLWidget):
             self.camera.SetUp(self.up[0],self.up[1],self.up[2])
             return
         wheel = DirectX11.Mouse.GetWheel()
+        #円周算出
+        circumference = self.clength * 3.14 
+        #その円周からちょうどいい感じに動く割合に変更
+        circumference = circumference / 600.0
         if wheel:
-            frontMove = self.front * (wheel * 0.2)
-            self.pos += frontMove
-            self.at += frontMove
+            self.clength -= (wheel * (circumference*0.1))
+            # frontMove = self.front * (wheel * 0.2)
+            # self.pos += frontMove
         if DirectX11.Mouse.GetKey(0):
-            rightMove = self.right * DirectX11.Mouse.GetMoveX() 
-            upMove = self.up * DirectX11.Mouse.GetMoveY()
+            rightMove = self.right * DirectX11.Mouse.GetMoveX() *circumference
+            upMove = self.up * DirectX11.Mouse.GetMoveY() * circumference
             self.pos += rightMove + upMove
         if DirectX11.Mouse.GetKey(1):
-            rightMove = self.right * DirectX11.Mouse.GetMoveX() 
-            upMove = self.up * DirectX11.Mouse.GetMoveY()
+            rightMove = self.right * DirectX11.Mouse.GetMoveX() * circumference
+            upMove = self.up * DirectX11.Mouse.GetMoveY() * circumference
             self.at += rightMove + upMove
         if DirectX11.Mouse.GetKey(2):
-            rightMove = self.right * DirectX11.Mouse.GetMoveX() 
-            upMove = self.up * DirectX11.Mouse.GetMoveY()
+            rightMove = self.right * DirectX11.Mouse.GetMoveX() * circumference
+            upMove = self.up * DirectX11.Mouse.GetMoveY() * circumference
             self.pos += rightMove + upMove
             self.at += rightMove + upMove
+        if self.clength < 10.0:
+            self.clength = 10.0
+
         #カメラ情報
         direct = self.at - self.pos
         self.front = direct / np.linalg.norm(direct)
+        self.pos = self.at - self.front * self.clength
         self.right = np.cross(self.up,self.front)
         self.up = np.cross(self.front,self.right)
         #カメラ情報更新
